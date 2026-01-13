@@ -21,7 +21,53 @@ function doPost(e) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
-    // Parse data from URL parameters (form data)
+    // Check if this is a batch operation
+    if (e.parameter.batch === 'true') {
+      const tickets = JSON.parse(e.parameter.tickets);
+      
+      // Get existing ticket numbers for duplicate checking
+      const allData = sheet.getDataRange().getValues();
+      const existingTickets = new Set(
+        allData.slice(1).map(row => 
+          String(row[0] || '').trim().padStart(3, '0').toLowerCase()
+        )
+      );
+      
+      let added = 0;
+      let failed = [];
+      
+      // Process each ticket
+      for (const ticket of tickets) {
+        const normalizedTicket = String(ticket.ticketNumber || '').trim().padStart(3, '0').toLowerCase();
+        
+        // Skip if already exists
+        if (existingTickets.has(normalizedTicket)) {
+          failed.push(ticket.ticketNumber);
+          continue;
+        }
+        
+        // Format ticket number and append
+        const formattedTicketNumber = String(ticket.ticketNumber).trim().padStart(3, '0');
+        sheet.appendRow([
+          formattedTicketNumber,
+          ticket.name,
+          ticket.phoneNumber,
+          ticket.paid ? 'Yes' : 'No'
+        ]);
+        
+        // Add to set to prevent duplicates within batch
+        existingTickets.add(normalizedTicket);
+        added++;
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: true,
+        added: added,
+        failed: failed
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Single ticket operation (original code)
     const data = {
       ticketNumber: e.parameter.ticketNumber,
       name: e.parameter.name,
