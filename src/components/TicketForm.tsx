@@ -149,7 +149,7 @@ export function TicketForm() {
             Ticket Number(s) <span className="required">*</span>
           </label>
           <input
-            type="tel"
+            type="text"
             id="ticketNumber"
             value={formData.ticketNumber}
             onChange={(e) => handleInputChange('ticketNumber', e.target.value)}
