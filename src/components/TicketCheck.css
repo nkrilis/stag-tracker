@@ -1,0 +1,237 @@
+.ticket-check-container {
+  max-width: 500px;
+  width: 100%;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .ticket-check-container {
+    margin: 1rem auto;
+    padding: 1.5rem;
+    max-width: 100%;
+  }
+}
+
+.ticket-check-container h1 {
+  margin-top: 0;
+  margin-bottom: 2rem;
+  color: #333;
+  text-align: center;
+}
+
+.check-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.check-button {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.75rem 1.5rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.check-button:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+.check-button:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.clear-button {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.75rem 1.5rem;
+  background-color: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.clear-button:hover {
+  background-color: #7f8c8d;
+}
+
+.results-container {
+  margin-top: 2rem;
+  width: 100%;
+}
+
+.results-header {
+  text-align: center;
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background: rgba(52, 152, 219, 0.1);
+  border-radius: 6px;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.result-card {
+  padding: 1.5rem;
+  border-radius: 8px;
+  animation: slideIn 0.3s ease-out;
+  height: fit-content;
+}
+
+.ticket-number-header {
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+  text-align: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-card.found {
+  background-color: #d4edda;
+  border: 2px solid #28a745;
+}
+
+.result-card.not-found {
+  background-color: #f8d7da;
+  border: 2px solid #dc3545;
+}
+
+.result-card.found .ticket-number-header {
+  color: #155724;
+}
+
+.result-card.not-found .ticket-number-header {
+  color: #721c24;
+}
+
+.not-found-message {
+  text-align: center;
+  color: #721c24;
+  font-weight: 600;
+  margin: 1rem 0;
+  font-size: 1.1rem;
+}
+
+.ticket-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 4px;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.detail-value {
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.detail-value.paid-yes {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.detail-value.paid-no {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.detail-row.amount-owed {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  margin-top: 0.5rem;
+}
+
+.owed-amount {
+  color: #856404;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.mark-paid-button {
+  width: 100%;
+  padding: 0.875rem;
+  margin-top: 1rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+
+.mark-paid-button:hover:not(:disabled) {
+  background-color: #218838;
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  transform: translateY(-1px);
+}
+
+.mark-paid-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.mark-paid-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(40, 167, 69, 0.2);
+}

@@ -162,6 +162,41 @@ export class GoogleSheetsService {
       throw error;
     }
   }
+
+  /**
+   * Update payment status for a ticket
+   */
+  async updatePaymentStatus(ticketNumber: string): Promise<boolean> {
+    try {
+      if (!this.scriptUrl) {
+        throw new Error('Missing Google Apps Script URL');
+      }
+
+      const params = new URLSearchParams();
+      params.append('action', 'updatePayment');
+      params.append('ticketNumber', ticketNumber.trim().padStart(3, '0'));
+      
+      const response = await fetch(this.scriptUrl, {
+        method: 'POST',
+        body: params,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update payment: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update payment');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      throw error;
+    }
+  }
 }
 
 export const sheetsService = new GoogleSheetsService();

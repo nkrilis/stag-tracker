@@ -21,6 +21,37 @@ function doPost(e) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
+    // Check if this is an update payment operation
+    if (e.parameter.action === 'updatePayment') {
+      const ticketNumber = e.parameter.ticketNumber;
+      const allData = sheet.getDataRange().getValues();
+      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
+      
+      // Find the row index (add 1 because arrays are 0-indexed but sheets are 1-indexed)
+      let rowIndex = -1;
+      for (let i = 1; i < allData.length; i++) {
+        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
+        if (existingTicket === normalizedTicket) {
+          rowIndex = i + 1; // Sheet row index
+          break;
+        }
+      }
+      
+      if (rowIndex === -1) {
+        return ContentService.createTextOutput(JSON.stringify({ 
+          success: false, 
+          error: 'Ticket not found' 
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      // Update the paid status (column D, index 4)
+      sheet.getRange(rowIndex, 4).setValue('Yes');
+      
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: true 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     // Check if this is a batch operation
     if (e.parameter.batch === 'true') {
       const tickets = JSON.parse(e.parameter.tickets);

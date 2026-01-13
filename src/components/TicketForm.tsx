@@ -199,15 +199,19 @@ export function TicketForm() {
           />
         </div>
 
-        <div className="form-group checkbox-group">
-          <label>
-            <input
-              type="checkbox"
-              checked={formData.paid}
-              onChange={(e) => handleInputChange('paid', e.target.checked)}
-              disabled={loading}
-            />
-            <span>Paid</span>
+        <div className="form-group toggle-group">
+          <label htmlFor="paid" className="toggle-label">
+            <span className="toggle-text">Paid</span>
+            <div className="toggle-switch">
+              <input
+                type="checkbox"
+                id="paid"
+                checked={formData.paid}
+                onChange={(e) => handleInputChange('paid', e.target.checked)}
+                disabled={loading}
+              />
+              <span className="toggle-slider"></span>
+            </div>
           </label>
         </div>
 
