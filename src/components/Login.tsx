@@ -15,8 +15,8 @@ export function Login({ onLogin }: LoginProps) {
     setLoading(true);
     setError('');
 
-    // Simple password check (you can change this password)
-    const correctPassword = 'stagparty2026';
+    // Get password from environment variable
+    const correctPassword = import.meta.env.VITE_LOGIN_PASSWORD;
 
     if (password === correctPassword) {
       localStorage.setItem('stagTrackerAuth', 'true');
