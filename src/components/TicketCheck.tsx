@@ -7,6 +7,7 @@ interface TicketDetails {
   name: string;
   phoneNumber: string;
   paid: string;
+  checkedIn: string;
 }
 
 interface TicketResult {
@@ -21,6 +22,7 @@ export const TicketCheck = () => {
   const [ticketNumber, setTicketNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [updatingTickets, setUpdatingTickets] = useState<Set<string>>(new Set());
+  const [checkingInTickets, setCheckingInTickets] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<TicketResult[]>([]);
 
   const googleSheetsService = new GoogleSheetsService();
@@ -80,7 +82,8 @@ export const TicketCheck = () => {
               ticketNumber: String(ticketRow[0]),
               name: String(ticketRow[1]),
               phoneNumber: String(ticketRow[2]),
-              paid: String(ticketRow[3])
+              paid: String(ticketRow[3]),
+              checkedIn: String(ticketRow[4] || 'No')
             }
           });
         } else {
@@ -117,6 +120,30 @@ export const TicketCheck = () => {
       alert('Failed to update payment status. Please try again.');
     } finally {
       setUpdatingTickets(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ticketNum);
+        return newSet;
+      });
+    }
+  };
+
+  const handleCheckIn = async (ticketNum: string) => {
+    setCheckingInTickets(prev => new Set(prev).add(ticketNum));
+
+    try {
+      await googleSheetsService.checkInTicket(ticketNum);
+      
+      // Update local state
+      setResults(prev => prev.map(result => 
+        result.ticketNumber === ticketNum && result.details
+          ? { ...result, details: { ...result.details, checkedIn: 'Yes' } }
+          : result
+      ));
+    } catch (error) {
+      console.error('Error checking in:', error);
+      alert('Failed to check in ticket. Please try again.');
+    } finally {
+      setCheckingInTickets(prev => {
         const newSet = new Set(prev);
         newSet.delete(ticketNum);
         return newSet;
@@ -198,6 +225,12 @@ export const TicketCheck = () => {
                         {result.details.paid}
                       </span>
                     </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Checked In:</span>
+                      <span className={`detail-value ${result.details.checkedIn === 'Yes' ? 'checked-in-yes' : 'checked-in-no'}`}>
+                        {result.details.checkedIn}
+                      </span>
+                    </div>
                     
                     {result.details.paid !== 'Yes' && (
                       <>
@@ -214,6 +247,16 @@ export const TicketCheck = () => {
                           {updatingTickets.has(result.ticketNumber) ? 'Updating...' : 'Mark as Paid'}
                         </button>
                       </>
+                    )}
+                    
+                    {result.details.checkedIn !== 'Yes' && (
+                      <button 
+                        onClick={() => handleCheckIn(result.ticketNumber)}
+                        disabled={checkingInTickets.has(result.ticketNumber)}
+                        className="check-in-button"
+                      >
+                        {checkingInTickets.has(result.ticketNumber) ? 'Checking In...' : 'Check In'}
+                      </button>
                     )}
                   </div>
                 ) : (

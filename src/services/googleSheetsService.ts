@@ -197,6 +197,41 @@ export class GoogleSheetsService {
       throw error;
     }
   }
+
+  /**
+   * Check in a ticket
+   */
+  async checkInTicket(ticketNumber: string): Promise<boolean> {
+    try {
+      if (!this.scriptUrl) {
+        throw new Error('Missing Google Apps Script URL');
+      }
+
+      const params = new URLSearchParams();
+      params.append('action', 'checkIn');
+      params.append('ticketNumber', ticketNumber.trim().padStart(3, '0'));
+      
+      const response = await fetch(this.scriptUrl, {
+        method: 'POST',
+        body: params,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to check in: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to check in');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking in:', error);
+      throw error;
+    }
+  }
 }
 
 export const sheetsService = new GoogleSheetsService();

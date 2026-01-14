@@ -52,6 +52,40 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
+    // Check if this is a check-in operation
+    if (e.parameter.action === 'checkIn') {
+      const ticketNumber = e.parameter.ticketNumber;
+      const allData = sheet.getDataRange().getValues();
+      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
+      
+      // Find the row index
+      let rowIndex = -1;
+      for (let i = 1; i < allData.length; i++) {
+        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
+        if (existingTicket === normalizedTicket) {
+          rowIndex = i + 1; // Sheet row index
+          break;
+        }
+      }
+      
+      if (rowIndex === -1) {
+        return ContentService.createTextOutput(JSON.stringify({ 
+          success: false, 
+          error: 'Ticket not found' 
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      // Update the checked in status (column E, index 5)
+      // Also record the timestamp
+      const timestamp = new Date().toLocaleString();
+      sheet.getRange(rowIndex, 5).setValue('Yes');
+      
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: true,
+        timestamp: timestamp
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     // Check if this is a batch operation
     if (e.parameter.batch === 'true') {
       const tickets = JSON.parse(e.parameter.tickets);
@@ -83,7 +117,8 @@ function doPost(e) {
           formattedTicketNumber,
           ticket.name,
           ticket.phoneNumber,
-          ticket.paid ? 'Yes' : 'No'
+          ticket.paid ? 'Yes' : 'No',
+          'No' // Checked In
         ]);
         
         // Add to set to prevent duplicates within batch
@@ -130,7 +165,8 @@ function doPost(e) {
       formattedTicketNumber,
       data.name,
       data.phoneNumber,
-      data.paid ? 'Yes' : 'No'
+      data.paid ? 'Yes' : 'No',
+      'No' // Checked In
     ]);
     
     const output = ContentService.createTextOutput(JSON.stringify({ success: true }))
