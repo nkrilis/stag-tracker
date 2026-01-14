@@ -15,8 +15,10 @@ export function Login({ onLogin }: LoginProps) {
     setLoading(true);
     setError('');
 
-    // Get password from environment variable
+    // Get password from environment variable with fallback
     const correctPassword = import.meta.env.VITE_LOGIN_PASSWORD;
+    
+    console.log('Env password:', import.meta.env.VITE_LOGIN_PASSWORD); // Debug log
 
     if (password === correctPassword) {
       localStorage.setItem('stagTrackerAuth', 'true');
