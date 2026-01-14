@@ -17,8 +17,28 @@ export function TicketForm() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [duplicates, setDuplicates] = useState<string[]>([]);
   const [ticketCount, setTicketCount] = useState(0);
+  const [phoneError, setPhoneError] = useState<string>('');
 
   const MAX_BATCH_SIZE = 50;
+
+  // Validate phone number (10 digits)
+  const validatePhoneNumber = (phone: string): boolean => {
+    const digitsOnly = phone.replace(/\D/g, '');
+    return digitsOnly.length === 10;
+  };
+
+  // Format phone number as user types
+  const formatPhoneNumber = (value: string): string => {
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    if (digitsOnly.length <= 3) {
+      return digitsOnly;
+    } else if (digitsOnly.length <= 6) {
+      return `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+    } else {
+      return `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6, 10)}`;
+    }
+  };
 
   // Parse ticket numbers from input (supports ranges and comma-separated)
   const parseTicketNumbers = (input: string): string[] => {
@@ -88,9 +108,16 @@ export function TicketForm() {
       setMessage({ type: 'error', text: `Ticket(s) already exist: ${duplicates.join(', ')}` });
       return;
     }
+
+    // Validate phone number
+    if (!validatePhoneNumber(formData.phoneNumber)) {
+      setPhoneError('Phone number must be exactly 10 digits');
+      return;
+    }
     
     setLoading(true);
     setMessage(null);
+    setPhoneError('');
 
     try {
       const tickets = parseTicketNumbers(formData.ticketNumber);
@@ -142,10 +169,23 @@ export function TicketForm() {
   };
 
   const handleInputChange = (field: keyof TicketData, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    if (field === 'phoneNumber' && typeof value === 'string') {
+      const formatted = formatPhoneNumber(value);
+      setFormData(prev => ({
+        ...prev,
+        [field]: formatted,
+      }));
+      
+      // Clear phone error when user starts typing
+      if (phoneError) {
+        setPhoneError('');
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
   };
 
   return (
@@ -209,8 +249,18 @@ export function TicketForm() {
             onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
             required
             disabled={loading}
-            placeholder="Enter phone number"
+            placeholder="555-123-4567"
+            maxLength={12}
+            className={phoneError ? 'error' : ''}
           />
+          {phoneError && (
+            <span className="error-text">
+              ⚠️ {phoneError}
+            </span>
+          )}
+          <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+            Must be 10 digits
+          </small>
         </div>
 
         <div className="form-group toggle-group">
