@@ -1,0 +1,21 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="85" fill="url(#grad)"/>
+  <g transform="translate(256, 256)">
+    <!-- Ticket shape -->
+    <rect x="-160" y="-95" width="320" height="190" rx="20" fill="white" opacity="0.95"/>
+    <!-- Perforation circles -->
+    <circle cx="-160" cy="0" r="22" fill="url(#grad)"/>
+    <circle cx="160" cy="0" r="22" fill="url(#grad)"/>
+    <!-- Ticket text/lines -->
+    <rect x="-110" y="-55" width="220" height="22" rx="11" fill="url(#grad)" opacity="0.6"/>
+    <rect x="-110" y="-15" width="160" height="16" rx="8" fill="url(#grad)" opacity="0.4"/>
+    <rect x="-110" y="15" width="140" height="16" rx="8" fill="url(#grad)" opacity="0.4"/>
+    <rect x="-110" y="45" width="120" height="16" rx="8" fill="url(#grad)" opacity="0.4"/>
+  </g>
+</svg>

@@ -70,11 +70,35 @@ body {
   color: #667eea;
 }
 
+.install-button {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #34c759 0%, #28a745 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.install-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.install-button:active {
+  transform: translateY(0);
+}
+
 @media (max-width: 768px) {
   .nav-tabs {
     margin-bottom: 1rem;
     width: 100%;
     max-width: 500px;
+    flex-wrap: wrap;
   }
   
   .nav-tab {
@@ -82,5 +106,12 @@ body {
     text-align: center;
     padding: 0.75rem 1rem;
     font-size: 0.95rem;
+  }
+
+  .install-button {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.9rem;
   }
 }
