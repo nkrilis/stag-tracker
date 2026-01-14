@@ -64,6 +64,14 @@ body {
   transform: translateY(-2px);
 }
 
+@media (max-width: 768px) {
+  .logout-button {
+    top: auto;
+    bottom: 1rem;
+    right: 1rem;
+  }
+}
+
 .nav-tabs {
   display: flex;
   gap: 1rem;

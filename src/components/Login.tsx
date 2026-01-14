@@ -61,10 +61,6 @@ export function Login({ onLogin }: LoginProps) {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-
-        <div className="login-footer">
-          <p>Password: stagparty2026</p>
-        </div>
       </div>
     </div>
   );
