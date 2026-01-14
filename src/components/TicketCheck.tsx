@@ -359,9 +359,17 @@ export const TicketCheck = () => {
                     )}
 
                     {result.details.checkedIn !== 'Yes' && result.details.paid !== 'Yes' && (
-                      <div className="check-in-disabled-notice">
-                        <small style={{ color: '#999', fontSize: '0.85rem', fontStyle: 'italic' }}>
-                          Payment required before check-in
+                      <div style={{ 
+                        textAlign: 'center', 
+                        marginTop: '0.75rem', 
+                        padding: '0.75rem', 
+                        backgroundColor: '#fff3cd', 
+                        border: '1px solid #ffc107',
+                        borderRadius: '6px',
+                        color: '#856404'
+                      }}>
+                        <small style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+                          ⚠️ Payment required before check-in
                         </small>
                       </div>
                     )}
