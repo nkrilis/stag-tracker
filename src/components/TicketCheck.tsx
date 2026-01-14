@@ -119,11 +119,11 @@ export const TicketCheck = () => {
           }
         });
       } else if (searchMode === 'phone') {
-        // Phone number search (exact or partial match)
-        const searchTerm = searchInput.trim();
+        // Phone number search (ignore dashes and special characters)
+        const searchTerm = searchInput.trim().replace(/\D/g, ''); // Remove all non-digits
         
         rows.slice(1).forEach(row => {
-          const phone = String(row[2] || '');
+          const phone = String(row[2] || '').replace(/\D/g, ''); // Remove all non-digits
           if (phone.includes(searchTerm)) {
             foundResults.push({
               ticketNumber: String(row[0]),
