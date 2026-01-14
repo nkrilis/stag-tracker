@@ -35,7 +35,7 @@ export function Login({ onLogin }: LoginProps) {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1>🎟️ Stag Tracker</h1>
+          <h1>🎟️ Christopher's Stag Tracker</h1>
           <p>Event Ticket Management</p>
         </div>
         
