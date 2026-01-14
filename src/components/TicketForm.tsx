@@ -16,6 +16,9 @@ export function TicketForm() {
   const [ticketExists, setTicketExists] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [duplicates, setDuplicates] = useState<string[]>([]);
+  const [ticketCount, setTicketCount] = useState(0);
+
+  const MAX_BATCH_SIZE = 50;
 
   // Parse ticket numbers from input (supports ranges and comma-separated)
   const parseTicketNumbers = (input: string): string[] => {
@@ -51,12 +54,14 @@ export function TicketForm() {
       if (!input) {
         setTicketExists(false);
         setDuplicates([]);
+        setTicketCount(0);
         return;
       }
 
       setChecking(true);
       try {
         const tickets = parseTicketNumbers(input);
+        setTicketCount(tickets.length);
         
         // Use batch checking for better performance
         const existingTickets = await sheetsService.checkMultipleTickets(tickets);
@@ -92,6 +97,10 @@ export function TicketForm() {
       
       if (tickets.length === 0) {
         throw new Error('Please enter at least one ticket number');
+      }
+
+      if (tickets.length > MAX_BATCH_SIZE) {
+        throw new Error(`Maximum ${MAX_BATCH_SIZE} tickets allowed per submission. You entered ${tickets.length} tickets.`);
       }
 
       // Create batch of tickets with same info
@@ -159,8 +168,13 @@ export function TicketForm() {
             className={ticketExists ? 'error' : ''}
           />
           <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-            Enter single (001), range (001-005), or comma-separated (001, 003, 005)
+            Enter single (001), range (001-005), or comma-separated (001, 003, 005). Max {MAX_BATCH_SIZE} tickets per submission.
           </small>
+          {ticketCount > 0 && (
+            <span className={`ticket-count ${ticketCount > MAX_BATCH_SIZE ? 'error-text' : 'count-text'}`}>
+              {ticketCount} ticket{ticketCount !== 1 ? 's' : ''} {ticketCount > MAX_BATCH_SIZE && `- Exceeds limit of ${MAX_BATCH_SIZE}!`}
+            </span>
+          )}
           {checking && <span className="checking-text">Checking...</span>}
           {ticketExists && (
             <span className="error-text">
@@ -215,7 +229,7 @@ export function TicketForm() {
           </label>
         </div>
 
-        <button type="submit" disabled={loading || checking || ticketExists} className="submit-button">
+        <button type="submit" disabled={loading || checking || ticketExists || ticketCount > MAX_BATCH_SIZE} className="submit-button">
           {loading ? 'Adding Tickets...' : 'Add Ticket(s)'}
         </button>
 
