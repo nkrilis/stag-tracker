@@ -18,8 +18,11 @@ interface TicketResult {
 
 const TICKET_PRICE = 120;
 
+type SearchMode = 'ticket' | 'name' | 'phone';
+
 export const TicketCheck = () => {
-  const [ticketNumber, setTicketNumber] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchMode, setSearchMode] = useState<SearchMode>('ticket');
   const [loading, setLoading] = useState(false);
   const [updatingTickets, setUpdatingTickets] = useState<Set<string>>(new Set());
   const [checkingInTickets, setCheckingInTickets] = useState<Set<string>>(new Set());
@@ -53,7 +56,7 @@ export const TicketCheck = () => {
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!ticketNumber.trim()) {
+    if (!searchInput.trim()) {
       return;
     }
 
@@ -62,36 +65,79 @@ export const TicketCheck = () => {
 
     try {
       const rows = await googleSheetsService.getRows();
-      const ticketsToCheck = parseTicketNumbers(ticketNumber);
       const foundResults: TicketResult[] = [];
 
-      for (const ticket of ticketsToCheck) {
-        const normalizedTicket = ticket.trim().padStart(3, '0').toLowerCase();
-        
-        // Find the ticket in the data
-        const ticketRow = rows.slice(1).find(row => {
-          const existingTicket = String(row[0] || '').trim().padStart(3, '0').toLowerCase();
-          return existingTicket === normalizedTicket;
-        });
+      if (searchMode === 'ticket') {
+        // Ticket number search (supports ranges and comma-separated)
+        const ticketsToCheck = parseTicketNumbers(searchInput);
 
-        if (ticketRow) {
-          foundResults.push({
-            ticketNumber: ticket.trim().padStart(3, '0'),
-            found: true,
-            details: {
-              ticketNumber: String(ticketRow[0]),
-              name: String(ticketRow[1]),
-              phoneNumber: String(ticketRow[2]),
-              paid: String(ticketRow[3]),
-              checkedIn: String(ticketRow[4] || 'No')
-            }
+        for (const ticket of ticketsToCheck) {
+          const normalizedTicket = ticket.trim().padStart(3, '0').toLowerCase();
+          
+          const ticketRow = rows.slice(1).find(row => {
+            const existingTicket = String(row[0] || '').trim().padStart(3, '0').toLowerCase();
+            return existingTicket === normalizedTicket;
           });
-        } else {
-          foundResults.push({
-            ticketNumber: ticket.trim().padStart(3, '0'),
-            found: false
-          });
+
+          if (ticketRow) {
+            foundResults.push({
+              ticketNumber: ticket.trim().padStart(3, '0'),
+              found: true,
+              details: {
+                ticketNumber: String(ticketRow[0]),
+                name: String(ticketRow[1]),
+                phoneNumber: String(ticketRow[2]),
+                paid: String(ticketRow[3]),
+                checkedIn: String(ticketRow[4] || 'No')
+              }
+            });
+          } else {
+            foundResults.push({
+              ticketNumber: ticket.trim().padStart(3, '0'),
+              found: false
+            });
+          }
         }
+      } else if (searchMode === 'name') {
+        // Name search (case-insensitive partial match)
+        const searchTerm = searchInput.trim().toLowerCase();
+        
+        rows.slice(1).forEach(row => {
+          const name = String(row[1] || '').toLowerCase();
+          if (name.includes(searchTerm)) {
+            foundResults.push({
+              ticketNumber: String(row[0]),
+              found: true,
+              details: {
+                ticketNumber: String(row[0]),
+                name: String(row[1]),
+                phoneNumber: String(row[2]),
+                paid: String(row[3]),
+                checkedIn: String(row[4] || 'No')
+              }
+            });
+          }
+        });
+      } else if (searchMode === 'phone') {
+        // Phone number search (exact or partial match)
+        const searchTerm = searchInput.trim();
+        
+        rows.slice(1).forEach(row => {
+          const phone = String(row[2] || '');
+          if (phone.includes(searchTerm)) {
+            foundResults.push({
+              ticketNumber: String(row[0]),
+              found: true,
+              details: {
+                ticketNumber: String(row[0]),
+                name: String(row[1]),
+                phoneNumber: String(row[2]),
+                paid: String(row[3]),
+                checkedIn: String(row[4] || 'No')
+              }
+            });
+          }
+        });
       }
 
       setResults(foundResults);
@@ -152,8 +198,34 @@ export const TicketCheck = () => {
   };
 
   const handleClear = () => {
-    setTicketNumber('');
+    setSearchInput('');
     setResults([]);
+  };
+
+  const getPlaceholder = () => {
+    switch (searchMode) {
+      case 'ticket':
+        return 'e.g., 001, 003-005, 010';
+      case 'name':
+        return 'Enter name to search';
+      case 'phone':
+        return 'Enter phone number';
+      default:
+        return '';
+    }
+  };
+
+  const getHelperText = () => {
+    switch (searchMode) {
+      case 'ticket':
+        return 'Enter single (001), range (001-005), or comma-separated (001, 003, 005)';
+      case 'name':
+        return 'Search by full or partial name (case-insensitive)';
+      case 'phone':
+        return 'Search by full or partial phone number';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -162,27 +234,54 @@ export const TicketCheck = () => {
       
       <form onSubmit={handleCheck} className="check-form">
         <div className="form-group">
+          <label>Search By:</label>
+          <div className="search-mode-tabs">
+            <button
+              type="button"
+              className={`mode-tab ${searchMode === 'ticket' ? 'active' : ''}`}
+              onClick={() => setSearchMode('ticket')}
+            >
+              Ticket #
+            </button>
+            <button
+              type="button"
+              className={`mode-tab ${searchMode === 'name' ? 'active' : ''}`}
+              onClick={() => setSearchMode('name')}
+            >
+              Name
+            </button>
+            <button
+              type="button"
+              className={`mode-tab ${searchMode === 'phone' ? 'active' : ''}`}
+              onClick={() => setSearchMode('phone')}
+            >
+              Phone
+            </button>
+          </div>
+        </div>
+
+        <div className="form-group">
           <label htmlFor="checkTicketNumber">
-            Ticket Number(s)
+            {searchMode === 'ticket' ? 'Ticket Number(s)' : searchMode === 'name' ? 'Name' : 'Phone Number'}
           </label>
           <input
             type="text"
             id="checkTicketNumber"
-            value={ticketNumber}
-            onChange={(e) => setTicketNumber(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             required
             disabled={loading}
-            placeholder="e.g., 001, 003-005, 010"
+            placeholder={getPlaceholder()}
             autoFocus
           />
           <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-            Enter single (001), range (001-005), or comma-separated (001, 003, 005)
+            {getHelperText()}
           </small>
         </div>
 
         <div className="button-group">
           <button type="submit" disabled={loading} className="check-button">
-            {loading ? 'Checking...' : 'Check Ticket(s)'}
+            {loading ? 'Searching...' : 'Search'}
           </button>
           
           {results.length > 0 && (
