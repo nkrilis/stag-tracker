@@ -348,7 +348,7 @@ export const TicketCheck = () => {
                       </>
                     )}
                     
-                    {result.details.checkedIn !== 'Yes' && (
+                    {result.details.checkedIn !== 'Yes' && result.details.paid === 'Yes' && (
                       <button 
                         onClick={() => handleCheckIn(result.ticketNumber)}
                         disabled={checkingInTickets.has(result.ticketNumber)}
@@ -356,6 +356,14 @@ export const TicketCheck = () => {
                       >
                         {checkingInTickets.has(result.ticketNumber) ? 'Checking In...' : 'Check In'}
                       </button>
+                    )}
+
+                    {result.details.checkedIn !== 'Yes' && result.details.paid !== 'Yes' && (
+                      <div className="check-in-disabled-notice">
+                        <small style={{ color: '#999', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                          Payment required before check-in
+                        </small>
+                      </div>
                     )}
                   </div>
                 ) : (
