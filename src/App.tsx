@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import { useState, useEffect } from 'react';
 import { TicketForm } from './components/TicketForm';
 import { TicketCheck } from './components/TicketCheck';
+import { Login } from './components/Login';
 import './App.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -87,10 +88,36 @@ function AppContent() {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const authStatus = localStorage.getItem('stagTrackerAuth');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('stagTrackerAuth');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
     <BrowserRouter basename="/stag-tracker">
       <div className="app">
         <AppContent />
+        <button onClick={handleLogout} className="logout-button">
+          Logout
+        </button>
       </div>
     </BrowserRouter>
   );
