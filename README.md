@@ -44,14 +44,17 @@ npm install
 
 1. Create a new Google Sheet or use an existing one
 2. Make sure the first row contains headers:
-   ```
+
+   ```env
    Ticket Number | Name | Phone Number | Paid
    ```
+
 3. Share the sheet:
    - Click "Share" button
    - Change access to "Anyone with the link can view"
    - Copy the Spreadsheet ID from the URL:
-     ```
+
+     ```env
      https://docs.google.com/spreadsheets/d/[SPREADSHEET_ID]/edit
      ```
 
@@ -69,23 +72,26 @@ VITE_SPREADSHEET_ID=your_spreadsheet_id_here
 ### 4. Run the Application
 
 Development mode:
+
 ```bash
 npm run dev
 ```
 
 Build for production:
+
 ```bash
 npm run build
 ```
 
 Preview production build:
+
 ```bash
 npm run preview
 ```
 
 ## Project Structure
 
-```
+```env
 stag-tracker/
 ├── src/
 │   ├── components/
@@ -119,9 +125,8 @@ stag-tracker/
 
 Your Google Sheet should have the following columns:
 
-| Column A | Column B | Column C | Column D |
-|----------|----------|----------|----------|
 | Ticket Number | Name | Phone Number | Paid |
+| ---------- | ---------- | ---------- | ---------- |
 | 001 | John Doe | 555-1234 | Yes |
 | 002 | Jane Smith | 555-5678 | No |
 
