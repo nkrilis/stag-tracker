@@ -31,6 +31,10 @@ export function Dashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const [startY, setStartY] = useState(0);
 
   useEffect(() => {
     loadStats();
@@ -51,6 +55,63 @@ export function Dashboard() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0) {
+      setStartY(e.touches[0].clientY);
+      setIsPulling(true);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isPulling || window.scrollY > 0) return;
+    
+    const currentY = e.touches[0].clientY;
+    const distance = currentY - startY;
+    
+    if (distance > 0 && distance <= 100) {
+      setPullDistance(distance);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullDistance > 60 && !isRefreshing) {
+      setIsRefreshing(true);
+      await loadStats();
+      setIsRefreshing(false);
+    }
+    setIsPulling(false);
+    setPullDistance(0);
+    setStartY(0);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (window.scrollY === 0) {
+      setStartY(e.clientY);
+      setIsPulling(true);
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isPulling || window.scrollY > 0) return;
+    
+    const distance = e.clientY - startY;
+    
+    if (distance > 0 && distance <= 100) {
+      setPullDistance(distance);
+    }
+  };
+
+  const handleMouseUp = async () => {
+    if (pullDistance > 60 && !isRefreshing) {
+      setIsRefreshing(true);
+      await loadStats();
+      setIsRefreshing(false);
+    }
+    setIsPulling(false);
+    setPullDistance(0);
+    setStartY(0);
+  };
 
   const loadStats = async () => {
     try {
@@ -119,12 +180,40 @@ export function Dashboard() {
     return <div className="dashboard-loading">Loading dashboard...</div>;
   }
 
+  if (isRefreshing) {
+    return <div className="dashboard-loading">Refreshing data...</div>;
+  }
+
   return (
-    <div className="dashboard">
+    <div 
+      className="dashboard"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
+      {(isPulling || isRefreshing) && (
+        <div 
+          className="pull-to-refresh-indicator" 
+          style={{ 
+            height: `${pullDistance}px`,
+            opacity: pullDistance / 60
+          }}
+        >
+          <div className="refresh-icon">
+            {isRefreshing ? '⏳' : pullDistance > 60 ? '🔄' : '↓'}
+          </div>
+        </div>
+      )}
       <div className="dashboard-header">
-        <h2>📊 Event Dashboard</h2>
-        <div className={`online-status ${isOnline ? 'online' : 'offline'}`}>
-          {isOnline ? '🟢 Online' : '🔴 Offline'}
+        <div className="header-left">
+          <h2>📊 Event Dashboard</h2>
+          <div className={`online-status ${isOnline ? 'online' : 'offline'}`}>
+            {isOnline ? '🟢 Online' : '🔴 Offline'}
+          </div>
         </div>
       </div>
 

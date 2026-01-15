@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Login } from './components/Login';
 import { TicketForm } from './components/TicketForm';
-import { TicketCheck } from './components/TicketCheck';
 import { Dashboard } from './components/Dashboard';
 import { GuestSearch } from './components/GuestSearch';
 import { BulkCheckIn } from './components/BulkCheckIn';
 import './App.css';
 
-type View = 'dashboard' | 'add' | 'check' | 'bulk' | 'search';
+type View = 'dashboard' | 'add' | 'bulk' | 'search';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -88,12 +87,6 @@ function App() {
             📊 Dashboard
           </button>
           <button
-            className={currentView === 'check' ? 'active' : ''}
-            onClick={() => handleViewChange('check')}
-          >
-            ✓ Check-in
-          </button>
-          <button
             className={currentView === 'bulk' ? 'active' : ''}
             onClick={() => handleViewChange('bulk')}
           >
@@ -116,7 +109,6 @@ function App() {
 
       <main className="app-main">
         {currentView === 'dashboard' && <Dashboard />}
-        {currentView === 'check' && <TicketCheck />}
         {currentView === 'bulk' && <BulkCheckIn />}
         {currentView === 'search' && <GuestSearch />}
         {currentView === 'add' && <TicketForm />}
