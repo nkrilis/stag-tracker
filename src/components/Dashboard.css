@@ -2,6 +2,37 @@
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;
+  user-select: none;
+}
+
+.pull-to-refresh-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  background: linear-gradient(to bottom, rgba(102, 126, 234, 0.1), transparent);
+  transition: height 0.1s ease-out, opacity 0.1s ease-out;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.refresh-icon {
+  font-size: 24px;
+  padding-bottom: 10px;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
 }
 
 .dashboard-header {
@@ -9,6 +40,12 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+}
+
+.dashboard-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
 .dashboard-header h2 {

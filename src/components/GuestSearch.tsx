@@ -15,15 +15,33 @@ export function GuestSearch() {
   const [paymentModal, setPaymentModal] = useState<PaymentModalData | null>(null);
   const [pendingTicket, setPendingTicket] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [amountReceived, setAmountReceived] = useState('');
 
   useEffect(() => {
     loadAllTickets();
+
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(loadAllTickets, 5000);
+
+    // Refresh when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadAllTickets();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const loadAllTickets = async () => {
     try {
       const rows = await sheetsService.getRows();
-      setAllTickets(rows.slice(1)); // Skip header
+      setAllTickets(rows.slice(2)); // Skip title row and header row
     } catch (error) {
       console.error('Failed to load tickets:', error);
     }
@@ -102,7 +120,16 @@ export function GuestSearch() {
   const handlePaymentCancel = () => {
     setPaymentModal(null);
     setPendingTicket('');
+    setAmountReceived('');
   };
+
+  const calculateChange = () => {
+    const ticketPrice = 120;
+    const received = parseFloat(amountReceived) || 0;
+    return received - ticketPrice;
+  };
+
+  const change = calculateChange();
 
   return (
     <div className="guest-search">
@@ -127,7 +154,20 @@ export function GuestSearch() {
         <div className="search-results">
           {results.length > 0 ? (
             <>
-              <div className="results-count">{results.length} result{results.length !== 1 ? 's' : ''}</div>
+              <div className="results-summary">
+                <div className="results-count">{results.length} result{results.length !== 1 ? 's' : ''}</div>
+                <div className="results-stats">
+                  <span className="stat-item checked-in">
+                    ✓ {results.filter(r => r[4] === 'Yes').length} Checked In
+                  </span>
+                  <span className="stat-item paid">
+                    💵 {results.filter(r => r[3] === 'Yes').length} Paid
+                  </span>
+                  <span className="stat-item needs-payment">
+                    ❌ {results.filter(r => r[3] !== 'Yes').length} Need Payment
+                  </span>
+                </div>
+              </div>
               <ul>
                 {results.map((row, index) => {
                   const isCheckedIn = row[4] === 'Yes';
@@ -177,6 +217,37 @@ export function GuestSearch() {
               <div className="modal-guest-name">{paymentModal.name}</div>
               <div className="modal-ticket">Ticket #{paymentModal.ticketNumber.padStart(3, '0')}</div>
               <div className="modal-amount">$120.00</div>
+              <div className="change-calculator">
+                <label htmlFor="modal-amount-received">Amount Received:</label>
+                <div className="amount-input-wrapper">
+                  <span className="currency-symbol">$</span>
+                  <input
+                    id="modal-amount-received"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={amountReceived}
+                    onChange={(e) => setAmountReceived(e.target.value)}
+                    className="amount-input"
+                  />
+                </div>
+                {amountReceived && parseFloat(amountReceived) > 0 && (
+                  <div className={`change-display ${change >= 0 ? 'positive' : 'negative'}`}>
+                    {change >= 0 ? (
+                      <>
+                        <span className="change-label">Change:</span>
+                        <span className="change-amount">${change.toFixed(2)}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="change-label">Short:</span>
+                        <span className="change-amount">${Math.abs(change).toFixed(2)}</span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
               <p className="modal-text">Mark as paid and check in?</p>
             </div>
             <div className="modal-actions">

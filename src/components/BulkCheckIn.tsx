@@ -9,9 +9,11 @@ interface CheckInResult {
   timestamp: Date;
 }
 
-interface PaymentModalData {
-  name: string;
+interface SelectedGuest {
   ticketNumber: string;
+  name: string;
+  paid: boolean;
+  checkedIn: boolean;
 }
 
 export function BulkCheckIn() {
@@ -19,14 +21,14 @@ export function BulkCheckIn() {
   const [results, setResults] = useState<CheckInResult[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [paymentModal, setPaymentModal] = useState<PaymentModalData | null>(null);
-  const [pendingTicket, setPendingTicket] = useState<string>('');
+  const [selectedGuests, setSelectedGuests] = useState<SelectedGuest[]>([]);
+  const [amountReceived, setAmountReceived] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Keep focus on input
     inputRef.current?.focus();
-  }, [results]);
+  }, [results, selectedGuests]);
 
   const playSound = (success: boolean) => {
     if (!soundEnabled) return;
@@ -58,13 +60,28 @@ export function BulkCheckIn() {
     }
   };
 
-  const handleCheckIn = async (e: React.FormEvent) => {
+  const handleAddGuest = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!ticketNumber.trim() || isProcessing) return;
 
-    setIsProcessing(true);
     const ticket = ticketNumber.trim();
+    const normalizedTicket = ticket.padStart(3, '0');
+
+    // Check if already in selected list (normalized comparison)
+    if (selectedGuests.some(g => g.ticketNumber.padStart(3, '0') === normalizedTicket)) {
+      const result: CheckInResult = {
+        ticketNumber: ticket,
+        success: false,
+        message: 'Already in selection',
+        timestamp: new Date()
+      };
+      setResults(prev => [result, ...prev]);
+      playSound(false);
+      vibrate(100);
+      setTicketNumber('');
+      return;
+    }
 
     try {
       // Search for ticket
@@ -81,7 +98,6 @@ export function BulkCheckIn() {
         playSound(false);
         vibrate(200);
         setTicketNumber('');
-        setIsProcessing(false);
         return;
       }
 
@@ -99,32 +115,17 @@ export function BulkCheckIn() {
         playSound(false);
         vibrate([100, 50, 100]);
         setTicketNumber('');
-        setIsProcessing(false);
         return;
       }
 
-      // Check if not paid - show payment modal
-      if (ticketData.paid !== 'Yes') {
-        setPendingTicket(ticket);
-        setPaymentModal({
-          name: ticketData.name,
-          ticketNumber: ticket
-        });
-        setTicketNumber('');
-        setIsProcessing(false);
-        return;
-      }
-
-      // Perform check-in
-      await sheetsService.checkInTicket(ticket);
+      // Add to selection (store normalized ticket number)
+      setSelectedGuests(prev => [...prev, {
+        ticketNumber: normalizedTicket,
+        name: ticketData.name,
+        paid: ticketData.paid === 'Yes',
+        checkedIn: false
+      }]);
       
-      const result: CheckInResult = {
-        ticketNumber: ticket,
-        success: true,
-        message: `✓ ${ticketData.name}`,
-        timestamp: new Date()
-      };
-      setResults(prev => [result, ...prev]);
       playSound(true);
       vibrate(50);
       
@@ -132,7 +133,7 @@ export function BulkCheckIn() {
       const result: CheckInResult = {
         ticketNumber: ticket,
         success: false,
-        message: 'Check-in failed - try again',
+        message: 'Search failed - try again',
         timestamp: new Date()
       };
       setResults(prev => [result, ...prev]);
@@ -141,6 +142,77 @@ export function BulkCheckIn() {
     }
 
     setTicketNumber('');
+  };
+
+  const removeGuest = (ticketNumber: string) => {
+    setSelectedGuests(prev => prev.filter(g => g.ticketNumber !== ticketNumber));
+  };
+
+  const clearSelection = () => {
+    setSelectedGuests([]);
+    setAmountReceived('');
+  };
+
+  const calculateTotal = () => {
+    const unpaidCount = selectedGuests.filter(g => !g.paid).length;
+    return unpaidCount * 120;
+  };
+
+  const calculateChange = () => {
+    const total = calculateTotal();
+    const received = parseFloat(amountReceived) || 0;
+    return received - total;
+  };
+
+  const handleBatchCheckIn = async () => {
+    if (selectedGuests.length === 0 || isProcessing) return;
+
+    setIsProcessing(true);
+
+    const guestsToProcess = [...selectedGuests];
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const guest of guestsToProcess) {
+      try {
+        if (guest.paid) {
+          // Just check in
+          await sheetsService.checkInTicket(guest.ticketNumber);
+        } else {
+          // Pay and check in
+          await sheetsService.payAndCheckIn(guest.ticketNumber);
+        }
+        
+        const result: CheckInResult = {
+          ticketNumber: guest.ticketNumber,
+          success: true,
+          message: `✓ ${guest.name} ${guest.paid ? '' : '(Paid)'}`,
+          timestamp: new Date()
+        };
+        setResults(prev => [result, ...prev]);
+        successCount++;
+      } catch (error) {
+        const result: CheckInResult = {
+          ticketNumber: guest.ticketNumber,
+          success: false,
+          message: `Failed: ${guest.name}`,
+          timestamp: new Date()
+        };
+        setResults(prev => [result, ...prev]);
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      playSound(true);
+      vibrate([50, 100, 50]);
+    } else {
+      playSound(false);
+      vibrate(200);
+    }
+
+    setSelectedGuests([]);
+    setAmountReceived('');
     setIsProcessing(false);
   };
 
@@ -148,60 +220,10 @@ export function BulkCheckIn() {
     setResults([]);
   };
 
-  const handlePaymentConfirm = async () => {
-    if (!pendingTicket) return;
-
-    setIsProcessing(true);
-    const ticket = pendingTicket;
-    setPaymentModal(null);
-    setPendingTicket('');
-
-    try {
-      // Combined payment + check-in (faster - single operation)
-      await sheetsService.payAndCheckIn(ticket);
-      
-      const result: CheckInResult = {
-        ticketNumber: ticket,
-        success: true,
-        message: `✓ Paid & Checked in`,
-        timestamp: new Date()
-      };
-      setResults(prev => [result, ...prev]);
-      playSound(true);
-      vibrate(50);
-    } catch (error) {
-      const result: CheckInResult = {
-        ticketNumber: ticket,
-        success: false,
-        message: 'Payment/Check-in failed',
-        timestamp: new Date()
-      };
-      setResults(prev => [result, ...prev]);
-      playSound(false);
-      vibrate(200);
-    }
-
-    setIsProcessing(false);
-    inputRef.current?.focus();
-  };
-
-  const handlePaymentCancel = () => {
-    if (!pendingTicket) return;
-
-    const result: CheckInResult = {
-      ticketNumber: pendingTicket,
-      success: false,
-      message: `Payment required - ${paymentModal?.name || ''}`,
-      timestamp: new Date()
-    };
-    setResults(prev => [result, ...prev]);
-    playSound(false);
-    vibrate(200);
-
-    setPaymentModal(null);
-    setPendingTicket('');
-    inputRef.current?.focus();
-  };
+  const totalAmount = calculateTotal();
+  const unpaidCount = selectedGuests.filter(g => !g.paid).length;
+  const change = calculateChange();
+  const hasValidPayment = amountReceived && parseFloat(amountReceived) >= totalAmount;
 
   return (
     <div className="bulk-checkin">
@@ -222,7 +244,7 @@ export function BulkCheckIn() {
         </div>
       </div>
 
-      <form onSubmit={handleCheckIn} className="bulk-form">
+      <form onSubmit={handleAddGuest} className="bulk-form">
         <input
           ref={inputRef}
           type="text"
@@ -234,9 +256,95 @@ export function BulkCheckIn() {
           className="bulk-input"
         />
         <button type="submit" disabled={isProcessing || !ticketNumber.trim()} className="bulk-submit">
-          {isProcessing ? '⏳' : '→'}
+          {isProcessing ? '⏳' : '+'}
         </button>
       </form>
+
+      {selectedGuests.length > 0 && (
+        <div className="selected-guests">
+          <div className="selected-header">
+            <h3>Selected Guests ({selectedGuests.length})</h3>
+            <button onClick={clearSelection} className="clear-selection-btn">
+              Clear All
+            </button>
+          </div>
+          <div className="selected-list">
+            {selectedGuests.map((guest) => (
+              <div key={guest.ticketNumber} className="selected-guest-item">
+                <div className="guest-info">
+                  <span className="guest-ticket">#{guest.ticketNumber.padStart(3, '0')}</span>
+                  <span className="guest-name">{guest.name}</span>
+                  {!guest.paid && <span className="needs-payment">💵 $120</span>}
+                </div>
+                <button 
+                  onClick={() => removeGuest(guest.ticketNumber)}
+                  className="remove-guest-btn"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="batch-actions">
+            <div className="batch-summary">
+              <div className="summary-line">
+                <span>Total Guests:</span>
+                <span className="summary-value">{selectedGuests.length}</span>
+              </div>
+              {unpaidCount > 0 && (
+                <>
+                  <div className="summary-line">
+                    <span>Need Payment:</span>
+                    <span className="summary-value">{unpaidCount}</span>
+                  </div>
+                  <div className="summary-line total-line">
+                    <span>Total Amount:</span>
+                    <span className="summary-value total-amount">${totalAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="change-calculator">
+                    <label htmlFor="amount-received">Amount Received:</label>
+                    <div className="amount-input-wrapper">
+                      <span className="currency-symbol">$</span>
+                      <input
+                        id="amount-received"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={amountReceived}
+                        onChange={(e) => setAmountReceived(e.target.value)}
+                        className="amount-input"
+                      />
+                    </div>
+                    {amountReceived && parseFloat(amountReceived) > 0 && (
+                      <div className={`change-display ${change >= 0 ? 'positive' : 'negative'}`}>
+                        {change >= 0 ? (
+                          <>
+                            <span className="change-label">Change:</span>
+                            <span className="change-amount">${change.toFixed(2)}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="change-label">Short:</span>
+                            <span className="change-amount">${Math.abs(change).toFixed(2)}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+            <button 
+              onClick={handleBatchCheckIn}
+              disabled={isProcessing}
+              className="batch-checkin-btn"
+            >
+              {isProcessing ? 'Processing...' : `Check In ${selectedGuests.length > 1 ? 'All' : ''} ${unpaidCount > 0 ? '& Pay' : ''}`}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="bulk-stats">
         <div className="stat">
@@ -270,37 +378,6 @@ export function BulkCheckIn() {
           </div>
         )}
       </div>
-
-      {paymentModal && (
-        <div className="payment-modal-overlay" onClick={handlePaymentCancel}>
-          <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>💳 Payment Required</h3>
-            </div>
-            <div className="modal-content">
-              <div className="modal-guest-name">{paymentModal.name}</div>
-              <div className="modal-ticket">Ticket #{paymentModal.ticketNumber.padStart(3, '0')}</div>
-              <div className="modal-amount">$120.00</div>
-              <p className="modal-text">Mark as paid and check in?</p>
-            </div>
-            <div className="modal-actions">
-              <button 
-                className="modal-btn modal-cancel" 
-                onClick={handlePaymentCancel}
-              >
-                Cancel
-              </button>
-              <button 
-                className="modal-btn modal-confirm" 
-                onClick={handlePaymentConfirm}
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Processing...' : 'Mark Paid & Check In'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
