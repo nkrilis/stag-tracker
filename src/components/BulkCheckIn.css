@@ -9,17 +9,22 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .bulk-header h2 {
   margin: 0;
-  color: #1a1a1a;
+  color: white;
   font-size: 28px;
+  flex: 1 1 100%;
+  text-align: center;
 }
 
 .bulk-controls {
   display: flex;
   gap: 10px;
+  flex: 1 1 100%;
 }
 
 .sound-toggle {
@@ -47,6 +52,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  flex: 1;
 }
 
 .clear-btn:hover {
@@ -461,135 +467,6 @@
   font-size: 14px;
 }
 
-/* Payment Modal */
-.payment-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.payment-modal {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  max-width: 450px;
-  width: 90%;
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.modal-header {
-  padding: 25px 30px 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 24px;
-  color: #1a1a1a;
-}
-
-.modal-content {
-  padding: 30px;
-  text-align: center;
-}
-
-.modal-guest-name {
-  font-size: 26px;
-  font-weight: bold;
-  color: #1a1a1a;
-  margin-bottom: 10px;
-}
-
-.modal-ticket {
-  font-size: 18px;
-  color: #666;
-  margin-bottom: 20px;
-}
-
-.modal-amount {
-  font-size: 48px;
-  font-weight: bold;
-  color: #667eea;
-  margin: 20px 0;
-}
-
-.modal-text {
-  font-size: 16px;
-  color: #666;
-  margin: 15px 0 0;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  padding: 20px 30px 30px;
-}
-
-.modal-btn {
-  flex: 1;
-  padding: 15px 25px;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.modal-cancel {
-  background: #f0f0f0;
-  color: #666;
-}
-
-.modal-cancel:hover {
-  background: #e0e0e0;
-}
-
-.modal-confirm {
-  background: #667eea;
-  color: white;
-}
-
-.modal-confirm:hover:not(:disabled) {
-  background: #5568d3;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.modal-confirm:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-
 .no-results {
   padding: 40px;
   text-align: center;
@@ -599,12 +476,6 @@
 @media (max-width: 768px) {
   .bulk-checkin {
     padding: 15px;
-  }
-
-  .bulk-header {
-    flex-direction: column;
-    gap: 15px;
-    align-items: flex-start;
   }
 
   .bulk-stats {
