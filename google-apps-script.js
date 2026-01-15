@@ -9,6 +9,62 @@ function doOptions(e) {
 
 function doGet(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  // Server-side search for specific ticket
+  if (e.parameter.action === 'searchTicket') {
+    const ticketNumber = e.parameter.ticketNumber;
+    const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0');
+    
+    // Use TextFinder for faster searching
+    const finder = sheet.createTextFinder(normalizedTicket).matchEntireCell(true);
+    const result = finder.findNext();
+    
+    if (result) {
+      const row = result.getRow();
+      const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: true, 
+        found: true,
+        data: {
+          ticketNumber: rowData[0],
+          name: rowData[1],
+          phoneNumber: rowData[2],
+          paid: rowData[3],
+          checkedIn: rowData[4]
+        }
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: true, 
+      found: false 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Batch ticket check for existence
+  if (e.parameter.action === 'checkTickets') {
+    const ticketNumbers = JSON.parse(e.parameter.tickets);
+    const normalizedTickets = ticketNumbers.map(t => String(t).trim().padStart(3, '0').toLowerCase());
+    
+    const allData = sheet.getDataRange().getValues();
+    const existingSet = new Set(
+      allData.slice(1).map(row => String(row[0] || '').trim().padStart(3, '0').toLowerCase())
+    );
+    
+    const existingTickets = [];
+    for (let i = 0; i < ticketNumbers.length; i++) {
+      if (existingSet.has(normalizedTickets[i])) {
+        existingTickets.push(ticketNumbers[i].padStart(3, '0'));
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: true, 
+      existingTickets: existingTickets 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Default: return all data (fallback for backward compatibility)
   const data = sheet.getDataRange().getValues();
   
   const output = ContentService.createTextOutput(JSON.stringify({ success: true, data: data }))

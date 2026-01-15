@@ -36,21 +36,55 @@ export class GoogleSheetsService {
   }
 
   /**
-   * Check if a ticket number already exists in the sheet
+   * Search for a specific ticket (realtime server-side search)
+   */
+  async searchTicket(ticketNumber: string): Promise<{
+    found: boolean;
+    data?: {
+      ticketNumber: string;
+      name: string;
+      phoneNumber: string;
+      paid: string;
+      checkedIn: string;
+    };
+  }> {
+    try {
+      if (!this.scriptUrl) {
+        throw new Error('Missing Google Apps Script URL');
+      }
+
+      const normalizedTicket = ticketNumber.trim().padStart(3, '0');
+      const url = `${this.scriptUrl}?action=searchTicket&ticketNumber=${encodeURIComponent(normalizedTicket)}`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to search ticket: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to search ticket');
+      }
+      
+      return {
+        found: result.found,
+        data: result.data
+      };
+    } catch (error) {
+      console.error('Error searching ticket:', error);
+      return { found: false };
+    }
+  }
+
+  /**
+   * Check if a ticket number already exists in the sheet (realtime)
    */
   async ticketExists(ticketNumber: string): Promise<boolean> {
     try {
-      const rows = await this.getRows();
-      
-      // Normalize ticket number to 3 digits (001, 002, etc.)
-      const normalizedTicket = ticketNumber.trim().padStart(3, '0').toLowerCase();
-      
-      const exists = rows.slice(1).some(row => {
-        const existingTicket = String(row[0] || '').trim().padStart(3, '0').toLowerCase();
-        return existingTicket === normalizedTicket;
-      });
-      
-      return exists;
+      const result = await this.searchTicket(ticketNumber);
+      return result.found;
     } catch (error) {
       console.error('Error checking ticket existence:', error);
       return false;
@@ -58,29 +92,29 @@ export class GoogleSheetsService {
   }
 
   /**
-   * Check multiple ticket numbers at once (optimized batch check)
+   * Check multiple ticket numbers at once (optimized batch check - server-side)
    */
   async checkMultipleTickets(ticketNumbers: string[]): Promise<string[]> {
     try {
-      const rows = await this.getRows();
-      const existingTickets: string[] = [];
+      if (!this.scriptUrl) {
+        throw new Error('Missing Google Apps Script URL');
+      }
+
+      const url = `${this.scriptUrl}?action=checkTickets&tickets=${encodeURIComponent(JSON.stringify(ticketNumbers))}`;
       
-      // Normalize all ticket numbers
-      const normalizedTickets = ticketNumbers.map(t => t.trim().padStart(3, '0').toLowerCase());
+      const response = await fetch(url);
       
-      // Get all existing ticket numbers from sheet
-      const existingSet = new Set(
-        rows.slice(1).map(row => String(row[0] || '').trim().padStart(3, '0').toLowerCase())
-      );
+      if (!response.ok) {
+        throw new Error(`Failed to check tickets: ${response.statusText}`);
+      }
+
+      const result = await response.json();
       
-      // Check which tickets exist
-      for (let i = 0; i < ticketNumbers.length; i++) {
-        if (existingSet.has(normalizedTickets[i])) {
-          existingTickets.push(ticketNumbers[i].padStart(3, '0'));
-        }
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to check tickets');
       }
       
-      return existingTickets;
+      return result.existingTickets || [];
     } catch (error) {
       console.error('Error checking multiple tickets:', error);
       return [];
