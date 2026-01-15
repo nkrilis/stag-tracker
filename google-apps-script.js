@@ -13,26 +13,28 @@ function doGet(e) {
   // Server-side search for specific ticket
   if (e.parameter.action === 'searchTicket') {
     const ticketNumber = e.parameter.ticketNumber;
-    const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0');
+    const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
     
-    // Use TextFinder for faster searching
-    const finder = sheet.createTextFinder(normalizedTicket).matchEntireCell(true);
-    const result = finder.findNext();
+    const allData = sheet.getDataRange().getValues();
     
-    if (result) {
-      const row = result.getRow();
-      const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
-      return ContentService.createTextOutput(JSON.stringify({ 
-        success: true, 
-        found: true,
-        data: {
-          ticketNumber: rowData[0],
-          name: rowData[1],
-          phoneNumber: rowData[2],
-          paid: rowData[3],
-          checkedIn: rowData[4]
-        }
-      })).setMimeType(ContentService.MimeType.JSON);
+    // Find the ticket in data rows (skip rows 1-2 for title/header)
+    for (let i = 2; i < allData.length; i++) {
+      const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
+      
+      if (existingTicket === normalizedTicket) {
+        const rowData = allData[i];
+        return ContentService.createTextOutput(JSON.stringify({ 
+          success: true, 
+          found: true,
+          data: {
+            ticketNumber: String(rowData[0] || ''),
+            name: String(rowData[1] || ''),
+            phoneNumber: String(rowData[2] || ''),
+            paid: String(rowData[3] || ''),
+            checkedIn: String(rowData[4] || '')
+          }
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     return ContentService.createTextOutput(JSON.stringify({ 
@@ -48,7 +50,7 @@ function doGet(e) {
     
     const allData = sheet.getDataRange().getValues();
     const existingSet = new Set(
-      allData.slice(1).map(row => String(row[0] || '').trim().padStart(3, '0').toLowerCase())
+      allData.slice(2).map(row => String(row[0] || '').trim().padStart(3, '0').toLowerCase())
     );
     
     const existingTickets = [];
@@ -83,9 +85,9 @@ function doPost(e) {
       const allData = sheet.getDataRange().getValues();
       const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
       
-      // Find the row index (add 1 because arrays are 0-indexed but sheets are 1-indexed)
+      // Find the row index (skip rows 1-2 for title/header, start at row 3)
       let rowIndex = -1;
-      for (let i = 1; i < allData.length; i++) {
+      for (let i = 2; i < allData.length; i++) {
         const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
         if (existingTicket === normalizedTicket) {
           rowIndex = i + 1; // Sheet row index
@@ -108,15 +110,48 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
+    // Check if this is a combined payment + check-in operation
+    if (e.parameter.action === 'payAndCheckIn') {
+      const ticketNumber = e.parameter.ticketNumber;
+      const allData = sheet.getDataRange().getValues();
+      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
+      
+      // Find the row index (skip rows 1-2 for title/header, start at row 3)
+      let rowIndex = -1;
+      for (let i = 2; i < allData.length; i++) {
+        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
+        if (existingTicket === normalizedTicket) {
+          rowIndex = i + 1; // Sheet row index
+          break;
+        }
+      }
+      
+      if (rowIndex === -1) {
+        return ContentService.createTextOutput(JSON.stringify({ 
+          success: false, 
+          error: 'Ticket not found' 
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      // Update both paid (column D) and checked in (column E) in one batch
+      const timestamp = new Date().toLocaleString();
+      sheet.getRange(rowIndex, 4, 1, 2).setValues([['Yes', 'Yes']]);
+      
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: true,
+        timestamp: timestamp
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     // Check if this is a check-in operation
     if (e.parameter.action === 'checkIn') {
       const ticketNumber = e.parameter.ticketNumber;
       const allData = sheet.getDataRange().getValues();
       const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
       
-      // Find the row index
+      // Find the row index (skip rows 1-2 for title/header, start at row 3)
       let rowIndex = -1;
-      for (let i = 1; i < allData.length; i++) {
+      for (let i = 2; i < allData.length; i++) {
         const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
         if (existingTicket === normalizedTicket) {
           rowIndex = i + 1; // Sheet row index
@@ -146,10 +181,10 @@ function doPost(e) {
     if (e.parameter.batch === 'true') {
       const tickets = JSON.parse(e.parameter.tickets);
       
-      // Get existing ticket numbers for duplicate checking
+      // Get existing ticket numbers for duplicate checking (skip rows 1-2)
       const allData = sheet.getDataRange().getValues();
       const existingTickets = new Set(
-        allData.slice(1).map(row => 
+        allData.slice(2).map(row => 
           String(row[0] || '').trim().padStart(3, '0').toLowerCase()
         )
       );
@@ -197,10 +232,10 @@ function doPost(e) {
       paid: e.parameter.paid === 'true'
     };
     
-    // Check if ticket number already exists (normalized to 3 digits)
+    // Check if ticket number already exists (normalized to 3 digits, skip rows 1-2)
     const allData = sheet.getDataRange().getValues();
     const normalizedTicket = String(data.ticketNumber || '').trim().padStart(3, '0').toLowerCase();
-    const ticketNumbers = allData.slice(1).map(row => 
+    const ticketNumbers = allData.slice(2).map(row => 
       String(row[0] || '').trim().padStart(3, '0').toLowerCase()
     );
     

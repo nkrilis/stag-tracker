@@ -174,6 +174,21 @@ export const TicketCheck = () => {
   };
 
   const handleCheckIn = async (ticketNum: string) => {
+    // Check if already checked in
+    const result = results.find(r => r.ticketNumber === ticketNum);
+    if (result?.details?.checkedIn === 'Yes') {
+      const confirmOverride = window.confirm(
+        `⚠️ DUPLICATE ALERT!\n\n` +
+        `Ticket #${ticketNum} is already checked in.\n` +
+        `Guest: ${result.details.name}\n\n` +
+        `Do you want to override and update the timestamp?`
+      );
+      
+      if (!confirmOverride) {
+        return;
+      }
+    }
+
     setCheckingInTickets(prev => new Set(prev).add(ticketNum));
 
     try {
@@ -185,6 +200,8 @@ export const TicketCheck = () => {
           ? { ...result, details: { ...result.details, checkedIn: 'Yes' } }
           : result
       ));
+      
+      alert(`✅ Check-in successful for ticket #${ticketNum}`);
     } catch (error) {
       console.error('Error checking in:', error);
       alert('Failed to check in ticket. Please try again.');
