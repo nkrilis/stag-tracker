@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { Login } from './components/Login';
 import { TicketForm } from './components/TicketForm';
 import { Dashboard } from './components/Dashboard';
-import { GuestSearch } from './components/GuestSearch';
-import { BulkCheckIn } from './components/BulkCheckIn';
+// import { GuestSearch } from './components/GuestSearch';
+// import { BulkCheckIn } from './components/BulkCheckIn';
 import './App.css';
 
-// type View = 'dashboard' | 'add';
-type View = 'dashboard' | 'add' | 'bulk' | 'search';
+type View = 'dashboard' | 'add';
+// type View = 'dashboard' | 'add' | 'bulk' | 'search';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -87,7 +87,7 @@ function App() {
           >
             📊 Dashboard
           </button>
-          <button
+          {/* <button
             className={currentView === 'bulk' ? 'active' : ''}
             onClick={() => handleViewChange('bulk')}
           >
@@ -98,7 +98,7 @@ function App() {
             onClick={() => handleViewChange('search')}
           >
             🔍 Search
-          </button>
+          </button> */}
           <button
             className={currentView === 'add' ? 'active' : ''}
             onClick={() => handleViewChange('add')}
@@ -110,8 +110,8 @@ function App() {
 
       <main className="app-main">
         {currentView === 'dashboard' && <Dashboard />}
-        {currentView === 'bulk' && <BulkCheckIn />}
-        {currentView === 'search' && <GuestSearch />}
+        {/* {currentView === 'bulk' && <BulkCheckIn />}
+        {currentView === 'search' && <GuestSearch />} */}
         {currentView === 'add' && <TicketForm />}
       </main>
     </div>
