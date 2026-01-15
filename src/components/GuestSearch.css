@@ -11,13 +11,13 @@
 
 .search-header h2 {
   margin: 0 0 10px 0;
-  color: #1a1a1a;
+  color: white;
   font-size: 28px;
 }
 
 .search-header p {
   margin: 0;
-  color: #333;
+  color: white;
   font-size: 16px;
   font-weight: 500;
 }
@@ -394,12 +394,6 @@
 
 .change-display.negative .change-amount {
   color: #f56565;
-}
-
-.modal-text {
-  font-size: 16px;
-  color: #666;
-  margin: 15px 0 0;
 }
 
 .modal-actions {

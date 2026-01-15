@@ -253,11 +253,6 @@ body {
   }
 }
 
-  .app-main {
-    padding: 20px 0;
-  }
-}
-
 .nav-tab.active {
   background: white;
   color: #667eea;

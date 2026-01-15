@@ -209,11 +209,9 @@ export function Dashboard() {
         </div>
       )}
       <div className="dashboard-header">
-        <div className="header-left">
-          <h2>📊 Event Dashboard</h2>
-          <div className={`online-status ${isOnline ? 'online' : 'offline'}`}>
-            {isOnline ? '🟢 Online' : '🔴 Offline'}
-          </div>
+        <h2>📊 Event Dashboard</h2>
+        <div className={`online-status ${isOnline ? 'online' : 'offline'}`}>
+          {isOnline ? '🟢 Online' : '🔴 Offline'}
         </div>
       </div>
 

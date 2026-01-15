@@ -247,6 +247,8 @@ export function BulkCheckIn() {
         <input
           ref={inputRef}
           type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
           value={ticketNumber}
           onChange={(e) => setTicketNumber(e.target.value)}
           placeholder="Scan or enter ticket number..."
@@ -307,6 +309,7 @@ export function BulkCheckIn() {
                       <input
                         id="amount-received"
                         type="number"
+                        inputMode="decimal"
                         step="0.01"
                         min="0"
                         placeholder="0.00"
