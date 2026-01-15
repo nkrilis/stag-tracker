@@ -266,6 +266,41 @@ export class GoogleSheetsService {
       throw error;
     }
   }
+
+  /**
+   * Mark as paid and check in (optimized single operation)
+   */
+  async payAndCheckIn(ticketNumber: string): Promise<boolean> {
+    try {
+      if (!this.scriptUrl) {
+        throw new Error('Missing Google Apps Script URL');
+      }
+
+      const params = new URLSearchParams();
+      params.append('action', 'payAndCheckIn');
+      params.append('ticketNumber', ticketNumber.trim().padStart(3, '0'));
+      
+      const response = await fetch(this.scriptUrl, {
+        method: 'POST',
+        body: params,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to pay and check in: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to pay and check in');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error paying and checking in:', error);
+      throw error;
+    }
+  }
 }
 
 export const sheetsService = new GoogleSheetsService();

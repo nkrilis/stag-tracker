@@ -10,9 +10,9 @@
 
 @media (max-width: 768px) {
   .ticket-form-container {
-    margin: 1rem auto;
+    margin: 1rem 15px;
     padding: 1.5rem;
-    max-width: 100%;
+    max-width: calc(100% - 30px);
   }
 }
 

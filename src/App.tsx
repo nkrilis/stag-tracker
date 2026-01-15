@@ -1,101 +1,36 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { Login } from './components/Login';
 import { TicketForm } from './components/TicketForm';
 import { TicketCheck } from './components/TicketCheck';
-import { Login } from './components/Login';
+import { Dashboard } from './components/Dashboard';
+import { GuestSearch } from './components/GuestSearch';
+import { BulkCheckIn } from './components/BulkCheckIn';
 import './App.css';
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
-function Navigation({ onInstallClick, showInstallButton }: { onInstallClick: () => void; showInstallButton: boolean }) {
-  const location = useLocation();
-  
-  return (
-    <nav className="nav-tabs">
-      <Link 
-        to="/" 
-        className={`nav-tab ${location.pathname === '/' ? 'active' : ''}`}
-      >
-        Add Tickets
-      </Link>
-      <Link 
-        to="/check" 
-        className={`nav-tab ${location.pathname === '/check' ? 'active' : ''}`}
-      >
-        Check Ticket
-      </Link>
-      {showInstallButton && (
-        <button 
-          onClick={onInstallClick}
-          className="install-button"
-          aria-label="Install App"
-        >
-          📱 Install App
-        </button>
-      )}
-    </nav>
-  );
-}
-
-function AppContent() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowInstallButton(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    // Hide button if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstallButton(false);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setShowInstallButton(false);
-    }
-    
-    setDeferredPrompt(null);
-  };
-
-  return (
-    <>
-      <Navigation onInstallClick={handleInstallClick} showInstallButton={showInstallButton} />
-      <Routes>
-        <Route path="/" element={<TicketForm />} />
-        <Route path="/check" element={<TicketCheck />} />
-      </Routes>
-    </>
-  );
-}
+type View = 'dashboard' | 'add' | 'check' | 'bulk' | 'search';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const authStatus = localStorage.getItem('stagTrackerAuth');
-    if (authStatus === 'true') {
+    const auth = localStorage.getItem('stagTrackerAuth');
+    if (auth === 'true') {
       setIsAuthenticated(true);
     }
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const handleLogin = () => {
@@ -107,19 +42,86 @@ function App() {
     setIsAuthenticated(false);
   };
 
+  const handleViewChange = (view: View) => {
+    setCurrentView(view);
+    setMobileMenuOpen(false);
+  };
+
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
 
   return (
-    <BrowserRouter basename="/stag-tracker">
-      <div className="app">
-        <AppContent />
-        <button onClick={handleLogout} className="logout-button">
-          Logout
-        </button>
-      </div>
-    </BrowserRouter>
+    <div className="app">
+      {mobileMenuOpen && (
+        <div 
+          className="menu-backdrop" 
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+      <header className="app-header">
+        <div className="header-content">
+          <div className="header-left">
+            <button 
+              className="hamburger-btn"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <h1>🎟️ Christopher's Stag Tracker</h1>
+          </div>
+          <div className="header-actions">
+            {!isOnline && <span className="offline-badge">🔴 Offline Mode</span>}
+            <button onClick={handleLogout} className="logout-btn">
+              Logout
+            </button>
+          </div>
+        </div>
+        <nav className={`app-nav ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <button
+            className={currentView === 'dashboard' ? 'active' : ''}
+            onClick={() => handleViewChange('dashboard')}
+          >
+            📊 Dashboard
+          </button>
+          <button
+            className={currentView === 'check' ? 'active' : ''}
+            onClick={() => handleViewChange('check')}
+          >
+            ✓ Check-in
+          </button>
+          <button
+            className={currentView === 'bulk' ? 'active' : ''}
+            onClick={() => handleViewChange('bulk')}
+          >
+            ⚡ Express
+          </button>
+          <button
+            className={currentView === 'search' ? 'active' : ''}
+            onClick={() => handleViewChange('search')}
+          >
+            🔍 Search
+          </button>
+          <button
+            className={currentView === 'add' ? 'active' : ''}
+            onClick={() => handleViewChange('add')}
+          >
+            ➕ Add Tickets
+          </button>
+        </nav>
+      </header>
+
+      <main className="app-main">
+        {currentView === 'dashboard' && <Dashboard />}
+        {currentView === 'check' && <TicketCheck />}
+        {currentView === 'bulk' && <BulkCheckIn />}
+        {currentView === 'search' && <GuestSearch />}
+        {currentView === 'add' && <TicketForm />}
+      </main>
+    </div>
   );
 }
 
