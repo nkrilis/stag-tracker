@@ -223,7 +223,6 @@ export function BulkCheckIn() {
   const totalAmount = calculateTotal();
   const unpaidCount = selectedGuests.filter(g => !g.paid).length;
   const change = calculateChange();
-  const hasValidPayment = amountReceived && parseFloat(amountReceived) >= totalAmount;
 
   return (
     <div className="bulk-checkin">
