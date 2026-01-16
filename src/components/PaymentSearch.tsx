@@ -50,18 +50,20 @@ export function PaymentSearch() {
     
     const filtered = allTickets.filter(row => {
       const name = String(row[1] || '').toLowerCase();
-      const phoneNumber = String(row[2] || '').toLowerCase();
+      const phoneNumber = String(row[2] || '');
+      const phoneNumberNormalized = phoneNumber.replace(/\D/g, ''); // Remove all non-digits
       const ticketNumber = String(row[0] || '').trim();
       
       // For numeric queries, pad both query and ticket number for comparison
       if (/^\d+$/.test(query)) {
         const paddedQuery = query.padStart(3, '0');
         const paddedTicket = ticketNumber.padStart(3, '0').toLowerCase();
-        return paddedTicket.includes(paddedQuery) || phoneNumber.includes(query);
+        return paddedTicket.includes(paddedQuery) || phoneNumberNormalized.includes(query);
       }
       
-      // For text queries, search in names
-      return name.includes(query);
+      // For text queries, search in names and also support phone with/without formatting
+      const queryNormalized = query.replace(/\D/g, '');
+      return name.includes(query) || phoneNumber.toLowerCase().includes(query) || (queryNormalized && phoneNumberNormalized.includes(queryNormalized));
     });
 
     setResults(filtered);
@@ -98,7 +100,7 @@ export function PaymentSearch() {
       <div className="search-box">
         <input
           type="text"
-          placeholder="Enter first name, last name, or ticket number..."
+          placeholder="Enter name, phone #, or ticket #..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           autoFocus
