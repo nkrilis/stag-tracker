@@ -143,6 +143,68 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
+    // Check if this is a mark as paid operation
+    if (e.parameter.action === 'markPaid') {
+      const ticketNumber = e.parameter.ticketNumber;
+      const allData = sheet.getDataRange().getValues();
+      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
+      
+      // Find the row index (skip rows 1-2 for title/header, start at row 3)
+      let rowIndex = -1;
+      for (let i = 2; i < allData.length; i++) {
+        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
+        if (existingTicket === normalizedTicket) {
+          rowIndex = i + 1; // Sheet row index
+          break;
+        }
+      }
+      
+      if (rowIndex === -1) {
+        return ContentService.createTextOutput(JSON.stringify({ 
+          success: false, 
+          error: 'Ticket not found' 
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      // Update the paid status (column D, index 4)
+      sheet.getRange(rowIndex, 4).setValue('Yes');
+      
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: true 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Check if this is a mark as unpaid operation
+    if (e.parameter.action === 'markUnpaid') {
+      const ticketNumber = e.parameter.ticketNumber;
+      const allData = sheet.getDataRange().getValues();
+      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
+      
+      // Find the row index (skip rows 1-2 for title/header, start at row 3)
+      let rowIndex = -1;
+      for (let i = 2; i < allData.length; i++) {
+        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
+        if (existingTicket === normalizedTicket) {
+          rowIndex = i + 1; // Sheet row index
+          break;
+        }
+      }
+      
+      if (rowIndex === -1) {
+        return ContentService.createTextOutput(JSON.stringify({ 
+          success: false, 
+          error: 'Ticket not found' 
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      // Update the paid status (column D, index 4)
+      sheet.getRange(rowIndex, 4).setValue('No');
+      
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: true 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     // Check if this is a check-in operation
     if (e.parameter.action === 'checkIn') {
       const ticketNumber = e.parameter.ticketNumber;
