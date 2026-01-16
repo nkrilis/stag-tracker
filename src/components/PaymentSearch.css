@@ -300,6 +300,14 @@
   
   .result-badges {
     justify-content: center;
+    width: 100%;
+  }
+  
+  .paid-badge,
+  .not-paid-badge,
+  .checked-in-indicator {
+    flex: 1;
+    text-align: center;
   }
   
   .payment-toggle-btn {
