@@ -9,4 +9,5 @@ export interface TicketData {
   name: string;
   phoneNumber: string;
   paid: boolean;
+  checkedIn: boolean; // EVENT DAY: Mark as checked in when adding
 }

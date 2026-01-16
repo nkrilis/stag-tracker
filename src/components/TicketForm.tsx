@@ -1,6 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { sheetsService } from '../services/googleSheetsService';
 import { TicketData } from '../config/googleSheets';
+import { EVENT_DAY } from '../config/appMode';
 import './TicketForm.css';
 
 export function TicketForm() {
@@ -9,6 +10,7 @@ export function TicketForm() {
     name: '',
     phoneNumber: '',
     paid: false,
+    checkedIn: false,
   });
 
   const [loading, setLoading] = useState(false);
@@ -151,6 +153,7 @@ export function TicketForm() {
           name: '',
           phoneNumber: '',
           paid: false,
+          checkedIn: false,
         });
         setTicketExists(false);
         setDuplicates([]);
@@ -263,21 +266,32 @@ export function TicketForm() {
           </small>
         </div>
 
+        {/* ========== TOGGLE DISPLAY ========== */}
         <div className="form-group toggle-group">
-          <label htmlFor="paid" className="toggle-label">
-            <span className="toggle-text">Paid</span>
+          <label htmlFor="paidAndCheckedIn" className="toggle-label">
+            <span className="toggle-text">
+              {EVENT_DAY ? 'Paid & Checked In' : 'Paid'}
+            </span>
             <div className="toggle-switch">
               <input
                 type="checkbox"
-                id="paid"
+                id="paidAndCheckedIn"
                 checked={formData.paid}
-                onChange={(e) => handleInputChange('paid', e.target.checked)}
+                onChange={(e) => {
+                  const value = e.target.checked;
+                  handleInputChange('paid', value);
+                  // EVENT DAY: Also mark as checked in
+                  if (EVENT_DAY) {
+                    handleInputChange('checkedIn', value);
+                  }
+                }}
                 disabled={loading}
               />
               <span className="toggle-slider"></span>
             </div>
           </label>
         </div>
+        {/* ========== END TOGGLE ========== */}
 
         <button type="submit" disabled={loading || checking || ticketExists || ticketCount > MAX_BATCH_SIZE} className="submit-button">
           {loading ? 'Adding Tickets...' : 'Add Ticket(s)'}

@@ -83,6 +83,8 @@ export function BulkCheckIn() {
       return;
     }
 
+    setIsProcessing(true);
+
     try {
       // Search for ticket
       const searchResult = await sheetsService.searchTicket(ticket);
@@ -98,6 +100,7 @@ export function BulkCheckIn() {
         playSound(false);
         vibrate(200);
         setTicketNumber('');
+        setIsProcessing(false);
         return;
       }
 
@@ -115,6 +118,7 @@ export function BulkCheckIn() {
         playSound(false);
         vibrate([100, 50, 100]);
         setTicketNumber('');
+        setIsProcessing(false);
         return;
       }
 
@@ -139,6 +143,8 @@ export function BulkCheckIn() {
       setResults(prev => [result, ...prev]);
       playSound(false);
       vibrate(200);
+    } finally {
+      setIsProcessing(false);
     }
 
     setTicketNumber('');

@@ -174,6 +174,7 @@ export class GoogleSheetsService {
       params.append('name', ticketData.name);
       params.append('phoneNumber', ticketData.phoneNumber);
       params.append('paid', ticketData.paid.toString());
+      params.append('checkedIn', ticketData.checkedIn.toString()); // EVENT DAY: Send checkedIn status
       
       const response = await fetch(this.scriptUrl, {
         method: 'POST',

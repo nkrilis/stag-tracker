@@ -122,7 +122,6 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  flex-wrap: wrap;
   flex: 1;
   min-width: 0;
 }
@@ -186,11 +185,17 @@
   color: #666;
 }
 
+.result-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 .result-badges {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .checked-in-indicator {
@@ -230,6 +235,7 @@
   transition: all 0.2s;
   flex-shrink: 0;
   white-space: nowrap;
+  align-self: center;
 }
 
 .payment-toggle-btn.mark-paid {
@@ -284,6 +290,16 @@
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+  }
+  
+  .result-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .result-badges {
+    justify-content: center;
   }
   
   .payment-toggle-btn {
