@@ -301,6 +301,76 @@ export class GoogleSheetsService {
       throw error;
     }
   }
+
+  /**
+   * Mark a ticket as paid
+   */
+  async markAsPaid(ticketNumber: string): Promise<boolean> {
+    try {
+      if (!this.scriptUrl) {
+        throw new Error('Missing Google Apps Script URL');
+      }
+
+      const params = new URLSearchParams();
+      params.append('action', 'markPaid');
+      params.append('ticketNumber', ticketNumber.trim().padStart(3, '0'));
+      
+      const response = await fetch(this.scriptUrl, {
+        method: 'POST',
+        body: params,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to mark as paid: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to mark as paid');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error marking as paid:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark a ticket as unpaid
+   */
+  async markAsUnpaid(ticketNumber: string): Promise<boolean> {
+    try {
+      if (!this.scriptUrl) {
+        throw new Error('Missing Google Apps Script URL');
+      }
+
+      const params = new URLSearchParams();
+      params.append('action', 'markUnpaid');
+      params.append('ticketNumber', ticketNumber.trim().padStart(3, '0'));
+      
+      const response = await fetch(this.scriptUrl, {
+        method: 'POST',
+        body: params,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to mark as unpaid: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to mark as unpaid');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error marking as unpaid:', error);
+      throw error;
+    }
+  }
 }
 
 export const sheetsService = new GoogleSheetsService();
