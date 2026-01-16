@@ -139,11 +139,23 @@
   min-width: 60px;
 }
 
-.result-name {
+.result-name-phone {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+}
+
+.result-name {
   font-size: 18px;
   color: #333;
-  min-width: 150px;
+  font-weight: 500;
+}
+
+.result-phone {
+  font-size: 14px;
+  color: #666;
 }
 
 .result-status {
@@ -151,6 +163,7 @@
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
+  text-align: center;
 }
 
 .result-status.checked-in {
@@ -170,6 +183,7 @@
   font-weight: 600;
   background: #d1ecf1;
   color: #0c5460;
+  text-align: center;
 }
 
 .not-paid-badge {
@@ -179,6 +193,7 @@
   font-weight: 600;
   background: #f8d7da;
   color: #721c24;
+  text-align: center;
 }
 
 .quick-checkin-btn {

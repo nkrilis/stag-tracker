@@ -57,19 +57,21 @@ export function GuestSearch() {
     const query = searchQuery.toLowerCase().trim();
     
     const filtered = allTickets.filter(row => {
-      const firstName = String(row[1] || '').toLowerCase();
-      const lastName = String(row[2] || '').toLowerCase();
+      const name = String(row[1] || '').toLowerCase();
+      const phoneNumber = String(row[2] || '');
+      const phoneNumberNormalized = phoneNumber.replace(/\D/g, ''); // Remove all non-digits
       const ticketNumber = String(row[0] || '').trim();
       
       // For numeric queries, pad both query and ticket number for comparison
       if (/^\d+$/.test(query)) {
         const paddedQuery = query.padStart(3, '0');
         const paddedTicket = ticketNumber.padStart(3, '0').toLowerCase();
-        return paddedTicket.includes(paddedQuery);
+        return paddedTicket.includes(paddedQuery) || phoneNumberNormalized.includes(query);
       }
       
-      // For text queries, search in names
-      return firstName.includes(query) || lastName.includes(query);
+      // For text queries, search in names and also support phone with/without formatting
+      const queryNormalized = query.replace(/\D/g, '');
+      return name.includes(query) || phoneNumber.toLowerCase().includes(query) || (queryNormalized && phoneNumberNormalized.includes(queryNormalized));
     });
 
     setResults(filtered);
@@ -135,13 +137,13 @@ export function GuestSearch() {
     <div className="guest-search">
       <div className="search-header">
         <h2>🔍 Guest Search</h2>
-        <p>Search by name or ticket number</p>
+        <p>Search by name, phone number, or ticket number</p>
       </div>
 
       <div className="search-box">
         <input
           type="text"
-          placeholder="Enter first name, last name, or ticket number..."
+          placeholder="Enter name, phone #, or ticket #..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           autoFocus
@@ -176,7 +178,12 @@ export function GuestSearch() {
                     <li key={index} className={isCheckedIn ? 'checked-in' : ''}>
                       <div className="result-info">
                         <span className="result-ticket">#{String(row[0]).padStart(3, '0')}</span>
-                        <span className="result-name">{row[1]} {row[2]}</span>
+                        <div className="result-name-phone">
+                          <span className="result-name">{row[1]}</span>
+                          <span className="result-phone">{row[2]}</span>
+                        </div>
+                      </div>
+                      <div className="result-actions">
                         <span className={`result-status ${isCheckedIn ? 'checked-in' : 'pending'}`}>
                           {isCheckedIn ? '✓ Checked In' : 'Not Checked In'}
                         </span>
@@ -185,15 +192,15 @@ export function GuestSearch() {
                         ) : (
                           <span className="not-paid-badge">❌ Not Paid</span>
                         )}
+                        {!isCheckedIn && (
+                          <button
+                            onClick={() => handleCheckIn(String(row[0]), isPaid, String(row[1]))}
+                            className="quick-checkin-btn"
+                          >
+                            Check In
+                          </button>
+                        )}
                       </div>
-                      {!isCheckedIn && (
-                        <button
-                          onClick={() => handleCheckIn(String(row[0]), isPaid, `${row[1]} ${row[2]}`)}
-                          className="quick-checkin-btn"
-                        >
-                          Check In
-                        </button>
-                      )}
                     </li>
                   );
                 })}
