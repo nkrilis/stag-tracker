@@ -7,18 +7,23 @@
 .search-header {
   text-align: center;
   margin-bottom: 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 30px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .search-header h2 {
   margin: 0 0 10px 0;
-  font-size: 2rem;
-  color: #333;
+  font-size: 2.5rem;
+  color: white;
+  font-weight: 700;
 }
 
 .search-header p {
   margin: 0;
-  color: #666;
-  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
 }
 
 .search-box {
@@ -101,6 +106,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
   transition: background-color 0.2s;
 }
 
@@ -118,6 +124,20 @@
   gap: 15px;
   flex-wrap: wrap;
   flex: 1;
+  min-width: 0;
+}
+
+.result-main {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+}
+
+.result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .result-ticket {
@@ -131,6 +151,46 @@
   font-weight: 500;
   color: #333;
   font-size: 1.1rem;
+}
+
+.result-phone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.result-phone-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  background: #28a745;
+  color: white;
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.result-phone-btn:hover {
+  background: #218838;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.5);
+}
+
+.result-phone-number {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.result-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .checked-in-indicator {
@@ -168,6 +228,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
   white-space: nowrap;
 }
 

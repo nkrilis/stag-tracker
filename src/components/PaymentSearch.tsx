@@ -49,19 +49,19 @@ export function PaymentSearch() {
     const query = searchQuery.toLowerCase().trim();
     
     const filtered = allTickets.filter(row => {
-      const firstName = String(row[1] || '').toLowerCase();
-      const lastName = String(row[2] || '').toLowerCase();
+      const name = String(row[1] || '').toLowerCase();
+      const phoneNumber = String(row[2] || '').toLowerCase();
       const ticketNumber = String(row[0] || '').trim();
       
       // For numeric queries, pad both query and ticket number for comparison
       if (/^\d+$/.test(query)) {
         const paddedQuery = query.padStart(3, '0');
         const paddedTicket = ticketNumber.padStart(3, '0').toLowerCase();
-        return paddedTicket.includes(paddedQuery);
+        return paddedTicket.includes(paddedQuery) || phoneNumber.includes(query);
       }
       
       // For text queries, search in names
-      return firstName.includes(query) || lastName.includes(query);
+      return name.includes(query);
     });
 
     setResults(filtered);
@@ -125,6 +125,8 @@ export function PaymentSearch() {
               <ul>
                 {results.map((row, index) => {
                   const ticketNumber = String(row[0]);
+                  const name = String(row[1] || '');
+                  const phoneNumber = String(row[2] || '');
                   const isPaid = row[3] === 'Yes';
                   const isCheckedIn = row[4] === 'Yes';
                   const isCurrentlyProcessing = isProcessing === ticketNumber;
@@ -132,16 +134,30 @@ export function PaymentSearch() {
                   return (
                     <li key={index}>
                       <div className="result-info">
-                        <span className="result-ticket">#{ticketNumber.padStart(3, '0')}</span>
-                        <span className="result-name">{row[1]} {row[2]}</span>
-                        {isCheckedIn && (
-                          <span className="checked-in-indicator">✓ Checked In</span>
-                        )}
-                        {isPaid ? (
-                          <span className="paid-badge">💵 Paid</span>
-                        ) : (
-                          <span className="not-paid-badge">❌ Unpaid</span>
-                        )}
+                        <div className="result-main">
+                          <span className="result-ticket">#{ticketNumber.padStart(3, '0')}</span>
+                          <div className="result-details">
+                            <span className="result-name">{name}</span>
+                            {phoneNumber && (
+                              <div className="result-phone-row">
+                                <a href={`tel:${phoneNumber}`} className="result-phone-btn" title="Call">
+                                  📞
+                                </a>
+                                <span className="result-phone-number">{phoneNumber}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="result-badges">
+                          {isCheckedIn && (
+                            <span className="checked-in-indicator">✓ Checked In</span>
+                          )}
+                          {isPaid ? (
+                            <span className="paid-badge">💵 Paid</span>
+                          ) : (
+                            <span className="not-paid-badge">❌ Unpaid</span>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={() => handleTogglePayment(ticketNumber, isPaid)}
