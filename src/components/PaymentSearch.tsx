@@ -148,6 +148,8 @@ export function PaymentSearch() {
                             )}
                           </div>
                         </div>
+                      </div>
+                      <div className="result-actions">
                         <div className="result-badges">
                           {isCheckedIn && (
                             <span className="checked-in-indicator">✓ Checked In</span>
@@ -158,20 +160,20 @@ export function PaymentSearch() {
                             <span className="not-paid-badge">❌ Unpaid</span>
                           )}
                         </div>
+                        <button
+                          onClick={() => handleTogglePayment(ticketNumber, isPaid)}
+                          className={`payment-toggle-btn ${isPaid ? 'mark-unpaid' : 'mark-paid'}`}
+                          disabled={isCurrentlyProcessing}
+                        >
+                          {isCurrentlyProcessing ? (
+                            'Processing...'
+                          ) : isPaid ? (
+                            'Mark Unpaid'
+                          ) : (
+                            'Mark Paid'
+                          )}
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleTogglePayment(ticketNumber, isPaid)}
-                        className={`payment-toggle-btn ${isPaid ? 'mark-unpaid' : 'mark-paid'}`}
-                        disabled={isCurrentlyProcessing}
-                      >
-                        {isCurrentlyProcessing ? (
-                          'Processing...'
-                        ) : isPaid ? (
-                          'Mark Unpaid'
-                        ) : (
-                          'Mark Paid'
-                        )}
-                      </button>
                     </li>
                   );
                 })}

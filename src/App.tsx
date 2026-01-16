@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { Login } from './components/Login';
 import { TicketForm } from './components/TicketForm';
 import { Dashboard } from './components/Dashboard';
-// import { PaymentSearch } from './components/PaymentSearch';
+import { PaymentSearch } from './components/PaymentSearch';
 import { GuestSearch } from './components/GuestSearch';
 import { BulkCheckIn } from './components/BulkCheckIn';
+import { EVENT_DAY } from './config/appMode';
 import './App.css';
 
-// type View = 'dashboard' | 'add' | 'payment';
-type View = 'dashboard' | 'add' | 'bulk' | 'search';
+type View = 'dashboard' | 'add' | 'bulk' | 'search' | 'payment';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -88,24 +88,35 @@ function App() {
           >
             📊 Dashboard
           </button>
-          {/* <button
-            className={currentView === 'payment' ? 'active' : ''}
-            onClick={() => handleViewChange('payment')}
-          >
-            💳 Payments
-          </button> */}
-          <button
-            className={currentView === 'bulk' ? 'active' : ''}
-            onClick={() => handleViewChange('bulk')}
-          >
-            ⚡ Express
-          </button>
-          <button
-            className={currentView === 'search' ? 'active' : ''}
-            onClick={() => handleViewChange('search')}
-          >
-            🔍 Search
-          </button>
+          
+          {/* EVENT DAY MODE: Show Express & Search */}
+          {EVENT_DAY && (
+            <>
+              <button
+                className={currentView === 'bulk' ? 'active' : ''}
+                onClick={() => handleViewChange('bulk')}
+              >
+                ⚡ Express
+              </button>
+              <button
+                className={currentView === 'search' ? 'active' : ''}
+                onClick={() => handleViewChange('search')}
+              >
+                🔍 Search
+              </button>
+            </>
+          )}
+          
+          {/* PRE-SALE MODE: Show Payment Management */}
+          {!EVENT_DAY && (
+            <button
+              className={currentView === 'payment' ? 'active' : ''}
+              onClick={() => handleViewChange('payment')}
+            >
+              💳 Payments
+            </button>
+          )}
+          
           <button
             className={currentView === 'add' ? 'active' : ''}
             onClick={() => handleViewChange('add')}
@@ -117,9 +128,9 @@ function App() {
 
       <main className="app-main">
         {currentView === 'dashboard' && <Dashboard />}
-        {/* {currentView === 'payment' && <PaymentSearch />} */}
-        {currentView === 'bulk' && <BulkCheckIn />}
-        {currentView === 'search' && <GuestSearch />}
+        {currentView === 'bulk' && EVENT_DAY && <BulkCheckIn />}
+        {currentView === 'search' && EVENT_DAY && <GuestSearch />}
+        {currentView === 'payment' && !EVENT_DAY && <PaymentSearch />}
         {currentView === 'add' && <TicketForm />}
       </main>
     </div>

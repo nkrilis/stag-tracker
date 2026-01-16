@@ -266,12 +266,15 @@ function doPost(e) {
         
         // Format ticket number and append
         const formattedTicketNumber = String(ticket.ticketNumber).trim().padStart(3, '0');
+        // EVENT DAY MODE: Use ticket.checkedIn if provided
+        // ORIGINAL MODE: Always set to 'No' for pre-sale
         sheet.appendRow([
           formattedTicketNumber,
           ticket.name,
           ticket.phoneNumber,
           ticket.paid ? 'Yes' : 'No',
-          'No' // Checked In
+          ticket.checkedIn ? 'Yes' : 'No' // EVENT DAY: Supports checking in on creation
+          // 'No' // ORIGINAL: Always 'No' for pre-sale tickets
         ]);
         
         // Add to set to prevent duplicates within batch
@@ -291,7 +294,8 @@ function doPost(e) {
       ticketNumber: e.parameter.ticketNumber,
       name: e.parameter.name,
       phoneNumber: e.parameter.phoneNumber,
-      paid: e.parameter.paid === 'true'
+      paid: e.parameter.paid === 'true',
+      checkedIn: e.parameter.checkedIn === 'true' // EVENT DAY: Support checkedIn parameter
     };
     
     // Check if ticket number already exists (normalized to 3 digits, skip rows 1-2)
@@ -313,13 +317,16 @@ function doPost(e) {
     // Format ticket number as 3 digits before appending
     const formattedTicketNumber = String(data.ticketNumber).trim().padStart(3, '0');
     
+    // EVENT DAY MODE: Use data.checkedIn if provided
+    // ORIGINAL MODE: Always set to 'No' for pre-sale
     // Append new row
     sheet.appendRow([
       formattedTicketNumber,
       data.name,
       data.phoneNumber,
       data.paid ? 'Yes' : 'No',
-      'No' // Checked In
+      data.checkedIn ? 'Yes' : 'No' // EVENT DAY: Supports checking in on creation
+      // 'No' // ORIGINAL: Always 'No' for pre-sale tickets
     ]);
     
     const output = ContentService.createTextOutput(JSON.stringify({ success: true }))

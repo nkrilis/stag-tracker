@@ -517,3 +517,26 @@
     font-size: 14px;
   }
 }
+
+@media (max-width: 480px) {
+  .bulk-form {
+    gap: 8px;
+  }
+  
+  .bulk-input {
+    font-size: 16px;
+    padding: 12px;
+    min-width: 0;
+  }
+  
+  .bulk-submit {
+    font-size: 20px;
+    padding: 12px;
+    min-width: 50px;
+    flex-shrink: 0;
+  }
+  
+  .bulk-header h2 {
+    font-size: 22px;
+  }
+}
