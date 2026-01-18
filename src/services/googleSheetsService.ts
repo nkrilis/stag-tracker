@@ -92,6 +92,48 @@ export class GoogleSheetsService {
   }
 
   /**
+   * Search for all tickets with the same phone number and name
+   */
+  async searchTicketsByGroup(phoneNumber: string, name: string): Promise<{
+    success: boolean;
+    tickets?: Array<{
+      ticketNumber: string;
+      name: string;
+      phoneNumber: string;
+      paid: string;
+      checkedIn: string;
+    }>;
+  }> {
+    try {
+      if (!this.scriptUrl) {
+        throw new Error('Missing Google Apps Script URL');
+      }
+
+      const url = `${this.scriptUrl}?action=searchByGroup&phoneNumber=${encodeURIComponent(phoneNumber)}&name=${encodeURIComponent(name)}`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to search tickets by group: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to search tickets by group');
+      }
+      
+      return {
+        success: true,
+        tickets: result.tickets || []
+      };
+    } catch (error) {
+      console.error('Error searching tickets by group:', error);
+      return { success: false, tickets: [] };
+    }
+  }
+
+  /**
    * Check multiple ticket numbers at once (optimized batch check - server-side)
    */
   async checkMultipleTickets(ticketNumbers: string[]): Promise<string[]> {

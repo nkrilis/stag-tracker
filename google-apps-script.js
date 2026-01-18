@@ -43,6 +43,37 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
   
+  // Search for all tickets with same phone number and name (group booking)
+  if (e.parameter.action === 'searchByGroup') {
+    const phoneNumber = e.parameter.phoneNumber;
+    const name = e.parameter.name;
+    
+    const allData = sheet.getDataRange().getValues();
+    const tickets = [];
+    
+    // Find all tickets with matching phone and name (skip rows 1-2 for title/header)
+    for (let i = 2; i < allData.length; i++) {
+      const rowData = allData[i];
+      const rowPhone = String(rowData[2] || '').trim();
+      const rowName = String(rowData[1] || '').trim();
+      
+      if (rowPhone === phoneNumber && rowName === name) {
+        tickets.push({
+          ticketNumber: String(rowData[0] || ''),
+          name: String(rowData[1] || ''),
+          phoneNumber: String(rowData[2] || ''),
+          paid: String(rowData[3] || ''),
+          checkedIn: String(rowData[4] || '')
+        });
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: true, 
+      tickets: tickets 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
   // Batch ticket check for existence
   if (e.parameter.action === 'checkTickets') {
     const ticketNumbers = JSON.parse(e.parameter.tickets);
