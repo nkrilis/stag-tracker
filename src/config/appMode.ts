@@ -13,4 +13,4 @@
  *   - Add Tickets: "Paid" toggle only (checked in = false)
  *   - Use during pre-sale period before event day
  */
-export const EVENT_DAY = true; // ⚠️ CHANGE THIS TO SWITCH MODES
+export const EVENT_DAY = false; // ⚠️ CHANGE THIS TO SWITCH MODES
