@@ -122,16 +122,86 @@ export function BulkCheckIn() {
         return;
       }
 
-      // Add to selection (store normalized ticket number)
-      setSelectedGuests(prev => [...prev, {
-        ticketNumber: normalizedTicket,
-        name: ticketData.name,
-        paid: ticketData.paid === 'Yes',
-        checkedIn: false
-      }]);
-      
-      playSound(true);
-      vibrate(50);
+      // Search for all tickets with the same phone number and name (group/company booking)
+      const groupResult = await sheetsService.searchTicketsByGroup(
+        ticketData.phoneNumber,
+        ticketData.name
+      );
+
+      const guestsToAdd: SelectedGuest[] = [];
+      let alreadyCheckedInCount = 0;
+      let alreadySelectedCount = 0;
+
+      if (groupResult.success && groupResult.tickets && groupResult.tickets.length > 0) {
+        // Process all tickets in the group
+        for (const groupTicket of groupResult.tickets) {
+          const normalizedGroupTicket = groupTicket.ticketNumber.padStart(3, '0');
+          
+          // Skip if already checked in
+          if (groupTicket.checkedIn === 'Yes') {
+            alreadyCheckedInCount++;
+            continue;
+          }
+
+          // Skip if already in selection
+          if (selectedGuests.some(g => g.ticketNumber.padStart(3, '0') === normalizedGroupTicket)) {
+            alreadySelectedCount++;
+            continue;
+          }
+
+          // Add to list
+          guestsToAdd.push({
+            ticketNumber: normalizedGroupTicket,
+            name: groupTicket.name,
+            paid: groupTicket.paid === 'Yes',
+            checkedIn: false
+          });
+        }
+      }
+
+      if (guestsToAdd.length > 0) {
+        setSelectedGuests(prev => [...prev, ...guestsToAdd]);
+        
+        const addedCount = guestsToAdd.length;
+        let message = `Added ${addedCount} guest${addedCount > 1 ? 's' : ''} - ${ticketData.name}`;
+        
+        if (alreadyCheckedInCount > 0) {
+          message += ` (${alreadyCheckedInCount} already checked in)`;
+        }
+        if (alreadySelectedCount > 0) {
+          message += ` (${alreadySelectedCount} already selected)`;
+        }
+
+        const result: CheckInResult = {
+          ticketNumber: ticket,
+          success: true,
+          message,
+          timestamp: new Date()
+        };
+        setResults(prev => [result, ...prev]);
+        playSound(true);
+        vibrate(50);
+      } else {
+        // All tickets already processed
+        let message = 'All tickets in group ';
+        if (alreadyCheckedInCount > 0 && alreadySelectedCount > 0) {
+          message += 'already checked in or selected';
+        } else if (alreadyCheckedInCount > 0) {
+          message += 'already checked in';
+        } else {
+          message += 'already selected';
+        }
+
+        const result: CheckInResult = {
+          ticketNumber: ticket,
+          success: false,
+          message,
+          timestamp: new Date()
+        };
+        setResults(prev => [result, ...prev]);
+        playSound(false);
+        vibrate([100, 50, 100]);
+      }
       
     } catch (error) {
       const result: CheckInResult = {
