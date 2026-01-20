@@ -31,7 +31,8 @@ function doGet(e) {
             name: String(rowData[1] || ''),
             phoneNumber: String(rowData[2] || ''),
             paid: String(rowData[3] || ''),
-            checkedIn: String(rowData[4] || '')
+            checkedIn: String(rowData[4] || ''),
+            expected: String(rowData[5] || 'Yes')
           }
         })).setMimeType(ContentService.MimeType.JSON);
       }
@@ -63,7 +64,8 @@ function doGet(e) {
           name: String(rowData[1] || ''),
           phoneNumber: String(rowData[2] || ''),
           paid: String(rowData[3] || ''),
-          checkedIn: String(rowData[4] || '')
+          checkedIn: String(rowData[4] || ''),
+          expected: String(rowData[5] || 'Yes')
         });
       }
     }
@@ -297,15 +299,18 @@ function doPost(e) {
         
         // Format ticket number and append
         const formattedTicketNumber = String(ticket.ticketNumber).trim().padStart(3, '0');
-        // EVENT DAY MODE: Use ticket.checkedIn if provided
-        // ORIGINAL MODE: Always set to 'No' for pre-sale
+        // Convert boolean values (handle both boolean and string)
+        const isPaid = ticket.paid === true || ticket.paid === 'true';
+        const isCheckedIn = ticket.checkedIn === true || ticket.checkedIn === 'true';
+        const isExpected = ticket.expected === true || ticket.expected === 'true';
+        
         sheet.appendRow([
           formattedTicketNumber,
           ticket.name,
           ticket.phoneNumber,
-          ticket.paid ? 'Yes' : 'No',
-          ticket.checkedIn ? 'Yes' : 'No' // EVENT DAY: Supports checking in on creation
-          // 'No' // ORIGINAL: Always 'No' for pre-sale tickets
+          isPaid ? 'Yes' : 'No',
+          isCheckedIn ? 'Yes' : 'No',
+          isExpected ? 'Yes' : 'No'
         ]);
         
         // Add to set to prevent duplicates within batch
@@ -326,7 +331,8 @@ function doPost(e) {
       name: e.parameter.name,
       phoneNumber: e.parameter.phoneNumber,
       paid: e.parameter.paid === 'true',
-      checkedIn: e.parameter.checkedIn === 'true' // EVENT DAY: Support checkedIn parameter
+      checkedIn: e.parameter.checkedIn === 'true', // EVENT DAY: Support checkedIn parameter
+      expected: e.parameter.expected === 'true' || e.parameter.expected === undefined // Default to true if not provided
     };
     
     // Check if ticket number already exists (normalized to 3 digits, skip rows 1-2)
@@ -356,8 +362,8 @@ function doPost(e) {
       data.name,
       data.phoneNumber,
       data.paid ? 'Yes' : 'No',
-      data.checkedIn ? 'Yes' : 'No' // EVENT DAY: Supports checking in on creation
-      // 'No' // ORIGINAL: Always 'No' for pre-sale tickets
+      data.checkedIn ? 'Yes' : 'No', // EVENT DAY: Supports checking in on creation
+      data.expected ? 'Yes' : 'No' // Track if customer expected to attend
     ]);
     
     const output = ContentService.createTextOutput(JSON.stringify({ success: true }))

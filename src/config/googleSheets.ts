@@ -10,4 +10,5 @@ export interface TicketData {
   phoneNumber: string;
   paid: boolean;
   checkedIn: boolean; // EVENT DAY: Mark as checked in when adding
+  expected: boolean; // Track if customer is expected to attend
 }

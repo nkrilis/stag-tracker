@@ -7,6 +7,7 @@ interface DashboardStats {
   checkedIn: number;
   paid: number;
   remaining: number;
+  expected: number;
   checkInRate: number;
   revenue: number;
   recentCheckIns: Array<{
@@ -25,6 +26,7 @@ export function Dashboard() {
     checkedIn: 0,
     paid: 0,
     remaining: 0,
+    expected: 0,
     checkInRate: 0,
     revenue: 0,
     recentCheckIns: []
@@ -83,6 +85,7 @@ export function Dashboard() {
       
       const checkedIn = dataRows.filter(row => row[4] === 'Yes').length;
       const paid = dataRows.filter(row => row[3] === 'Yes').length;
+      const expected = dataRows.filter(row => row[5] === 'Yes' || row[5] === undefined).length;
       const total = dataRows.length;
       const remaining = total - checkedIn;
       const revenue = paid * TICKET_PRICE;
@@ -103,6 +106,7 @@ export function Dashboard() {
         total,
         checkedIn,
         paid,
+        expected,
         revenue,
         remaining,
         checkInRate,
@@ -143,6 +147,11 @@ export function Dashboard() {
         <div className="stat-card">
           <div className="stat-value">{stats.paid}</div>
           <div className="stat-label">Paid Tickets</div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-value">{stats.expected}</div>
+          <div className="stat-label">Expected to Attend</div>
         </div>
 
         <div className="stat-card">
