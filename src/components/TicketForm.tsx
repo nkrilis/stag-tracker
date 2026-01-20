@@ -9,8 +9,9 @@ export function TicketForm() {
     ticketNumber: '',
     name: '',
     phoneNumber: '',
-    paid: false,
-    checkedIn: false,
+    paid: EVENT_DAY ? true : false,
+    checkedIn: EVENT_DAY ? true : false,
+    expected: true,
   });
 
   const [loading, setLoading] = useState(false);
@@ -152,8 +153,9 @@ export function TicketForm() {
           ticketNumber: '',
           name: '',
           phoneNumber: '',
-          paid: false,
-          checkedIn: false,
+          paid: EVENT_DAY ? true : false,
+          checkedIn: EVENT_DAY ? true : false,
+          expected: true,
         });
         setTicketExists(false);
         setDuplicates([]);
@@ -267,30 +269,45 @@ export function TicketForm() {
         </div>
 
         {/* ========== TOGGLE DISPLAY ========== */}
-        <div className="form-group toggle-group">
-          <label htmlFor="paidAndCheckedIn" className="toggle-label">
-            <span className="toggle-text">
-              {EVENT_DAY ? 'Paid & Checked In' : 'Paid'}
-            </span>
-            <div className="toggle-switch">
-              <input
-                type="checkbox"
-                id="paidAndCheckedIn"
-                checked={formData.paid}
-                onChange={(e) => {
-                  const value = e.target.checked;
-                  handleInputChange('paid', value);
-                  // EVENT DAY: Also mark as checked in
-                  if (EVENT_DAY) {
-                    handleInputChange('checkedIn', value);
-                  }
-                }}
-                disabled={loading}
-              />
-              <span className="toggle-slider"></span>
+        {!EVENT_DAY && (
+          <>
+            <div className="form-group toggle-group">
+              <label htmlFor="paidAndCheckedIn" className="toggle-label">
+                <span className="toggle-text">
+                  Paid
+                </span>
+                <div className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    id="paidAndCheckedIn"
+                    checked={formData.paid}
+                    onChange={(e) => handleInputChange('paid', e.target.checked)}
+                    disabled={loading}
+                  />
+                  <span className="toggle-slider"></span>
+                </div>
+              </label>
             </div>
-          </label>
-        </div>
+
+            <div className="form-group toggle-group">
+              <label htmlFor="expected" className="toggle-label">
+                <span className="toggle-text">
+                  Expected to Attend
+                </span>
+                <div className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    id="expected"
+                    checked={formData.expected}
+                    onChange={(e) => handleInputChange('expected', e.target.checked)}
+                    disabled={loading}
+                  />
+                  <span className="toggle-slider"></span>
+                </div>
+              </label>
+            </div>
+          </>
+        )}
         {/* ========== END TOGGLE ========== */}
 
         <button type="submit" disabled={loading || checking || ticketExists || ticketCount > MAX_BATCH_SIZE} className="submit-button">
