@@ -1,16 +1,18 @@
 BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Stag Tracker//Event//EN
+CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
-UID:stag-party-2026@stagtracker.com
-DTSTAMP:20260126T000000Z
-DTSTART:20260215T000000Z
-DTEND:20260215T070000Z
-SUMMARY:Christopher's Stag Party
-LOCATION:The Grand Ballroom\, 123 Main Street\, New York\, NY 10001
-DESCRIPTION:Join us for Christopher's Stag Party! It's going to be an unforgettable night!
+UID:stag-dinner-2026@stagtracker.com
+DTSTAMP:20260127T000000Z
+DTSTART:20260307T000000Z
+DTEND:20260307T050000Z
+SUMMARY:Gentleman's Dinner in Honor of Christopher Krilis
+LOCATION:The Terrace Event Venue\, 1680 Creditstone Rd\, Vaughan\, ON L4K 5V6
+DESCRIPTION:Join us for Christopher's Gentleman's Dinner!
 STATUS:CONFIRMED
+TRANSP:OPAQUE
 SEQUENCE:0
 END:VEVENT
 END:VCALENDAR
