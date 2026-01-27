@@ -1,0 +1,16 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Stag Tracker//Event//EN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:stag-party-2026@stagtracker.com
+DTSTAMP:20260126T000000Z
+DTSTART:20260215T000000Z
+DTEND:20260215T070000Z
+SUMMARY:Christopher's Stag Party
+LOCATION:The Grand Ballroom\, 123 Main Street\, New York\, NY 10001
+DESCRIPTION:Join us for Christopher's Stag Party! It's going to be an unforgettable night!
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR

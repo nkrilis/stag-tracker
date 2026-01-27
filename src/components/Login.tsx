@@ -2,7 +2,7 @@ import { useState, FormEvent } from 'react';
 import './Login.css';
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (isAdmin: boolean) => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
@@ -15,14 +15,18 @@ export function Login({ onLogin }: LoginProps) {
     setLoading(true);
     setError('');
 
-    // Get password from environment variable with fallback
-    const correctPassword = import.meta.env.VITE_LOGIN_PASSWORD;
-    
-    console.log('Env password:', import.meta.env.VITE_LOGIN_PASSWORD); // Debug log
+    // Get passwords from environment variables
+    const regularPassword = import.meta.env.VITE_LOGIN_PASSWORD;
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
 
-    if (password === correctPassword) {
-      localStorage.setItem('stagTrackerAuth', 'true');
-      onLogin();
+    if (password === adminPassword) {
+      // Admin access - can access everything including bulk notifications
+      localStorage.setItem('stagTrackerAuth', 'admin');
+      onLogin(true);
+    } else if (password === regularPassword) {
+      // Regular access - cannot access bulk notifications
+      localStorage.setItem('stagTrackerAuth', 'regular');
+      onLogin(false);
     } else {
       setError('Incorrect password');
       setPassword('');
