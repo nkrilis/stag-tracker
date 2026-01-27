@@ -99,7 +99,7 @@ export class CalendarLinkGenerator {
    * Generate a universal calendar link that works on all devices
    * Creates a data URI with .ics file that any calendar app can import
    */
-  static generateUniversalLink(event: CalendarEvent, baseUrl?: string): string {
+  static generateUniversalLink(event: CalendarEvent): string {
     const icsContent = this.generateICSContent(event);
     // Encode the ICS content as a data URL
     const dataUrl = `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent)}`;
@@ -111,7 +111,7 @@ export class CalendarLinkGenerator {
    * For static hosting (GitHub Pages), we link to a hosted .ics file
    * This works perfectly with iOS Calendar app
    */
-  static generateWebCalendarLink(event: CalendarEvent): string {
+  static generateWebCalendarLink(_event: CalendarEvent): string {
     // For GitHub Pages with project base path
     // Use import.meta.env.BASE_URL to get the configured base path
     const baseUrl = window.location.origin;
