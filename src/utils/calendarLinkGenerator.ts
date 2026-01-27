@@ -108,15 +108,15 @@ export class CalendarLinkGenerator {
 
   /**
    * Generate a web-based universal calendar link
-   * For static hosting (GitHub Pages), we link to a hosted .ics file
+   * For SMS, we create a short data URI that iOS will treat as a single event
    * This works perfectly with iOS Calendar app
    */
   static generateWebCalendarLink(_event: CalendarEvent): string {
-    // For GitHub Pages with project base path
-    // Use import.meta.env.BASE_URL to get the configured base path
-    const baseUrl = window.location.origin;
-    const basePath = import.meta.env.BASE_URL || '/';
-    return `${baseUrl}${basePath}event.ics`;
+    // For iOS to treat this as a single event (not a subscription),
+    // we need to use a data URI with the .ics content
+    const icsContent = this.generateICSContent(_event);
+    const encoded = encodeURIComponent(icsContent);
+    return `data:text/calendar;charset=utf-8,${encoded}`;
   }
 
   /**
