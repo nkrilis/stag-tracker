@@ -5,21 +5,27 @@ import { Dashboard } from './components/Dashboard';
 import { PaymentSearch } from './components/PaymentSearch';
 import { GuestSearch } from './components/GuestSearch';
 import { BulkCheckIn } from './components/BulkCheckIn';
+import { BulkNotification } from './components/BulkNotification';
 import { EVENT_DAY } from './config/appMode';
 import './App.css';
 
-type View = 'dashboard' | 'add' | 'bulk' | 'search' | 'payment';
+type View = 'dashboard' | 'add' | 'bulk' | 'search' | 'payment' | 'notifications';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const auth = localStorage.getItem('stagTrackerAuth');
-    if (auth === 'true') {
+    if (auth === 'admin') {
       setIsAuthenticated(true);
+      setIsAdmin(true);
+    } else if (auth === 'regular') {
+      setIsAuthenticated(true);
+      setIsAdmin(false);
     }
 
     const handleOnline = () => setIsOnline(true);
@@ -34,13 +40,15 @@ function App() {
     };
   }, []);
 
-  const handleLogin = () => {
+  const handleLogin = (adminAccess: boolean) => {
     setIsAuthenticated(true);
+    setIsAdmin(adminAccess);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('stagTrackerAuth');
     setIsAuthenticated(false);
+    setIsAdmin(false);
   };
 
   const handleViewChange = (view: View) => {
@@ -89,8 +97,8 @@ function App() {
             📊 Dashboard
           </button>
           
-          {/* EVENT DAY MODE: Show Express & Search */}
-          {EVENT_DAY && (
+          {/* EVENT DAY MODE or ADMIN: Show Express & Search */}
+          {(EVENT_DAY || isAdmin) && (
             <>
               <button
                 className={currentView === 'bulk' ? 'active' : ''}
@@ -117,6 +125,15 @@ function App() {
             </button>
           )}
           
+          {isAdmin && (
+            <button
+              className={currentView === 'notifications' ? 'active' : ''}
+              onClick={() => handleViewChange('notifications')}
+            >
+              📱 Notifications
+            </button>
+          )}
+          
           <button
             className={currentView === 'add' ? 'active' : ''}
             onClick={() => handleViewChange('add')}
@@ -128,9 +145,10 @@ function App() {
 
       <main className="app-main">
         {currentView === 'dashboard' && <Dashboard />}
-        {currentView === 'bulk' && EVENT_DAY && <BulkCheckIn />}
-        {currentView === 'search' && EVENT_DAY && <GuestSearch />}
+        {currentView === 'bulk' && (EVENT_DAY || isAdmin) && <BulkCheckIn />}
+        {currentView === 'search' && (EVENT_DAY || isAdmin) && <GuestSearch />}
         {currentView === 'payment' && !EVENT_DAY && <PaymentSearch />}
+        {currentView === 'notifications' && isAdmin && <BulkNotification />}
         {currentView === 'add' && <TicketForm />}
       </main>
     </div>
