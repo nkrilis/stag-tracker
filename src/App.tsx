@@ -116,7 +116,7 @@ function App() {
           )}
           
           {/* PRE-SALE MODE: Show Payment Management */}
-          {!EVENT_DAY && (
+          {(!EVENT_DAY || isAdmin) && (
             <button
               className={currentView === 'payment' ? 'active' : ''}
               onClick={() => handleViewChange('payment')}
@@ -147,7 +147,7 @@ function App() {
         {currentView === 'dashboard' && <Dashboard />}
         {currentView === 'bulk' && (EVENT_DAY || isAdmin) && <BulkCheckIn />}
         {currentView === 'search' && (EVENT_DAY || isAdmin) && <GuestSearch />}
-        {currentView === 'payment' && !EVENT_DAY && <PaymentSearch />}
+        {currentView === 'payment' && (!EVENT_DAY || isAdmin) && <PaymentSearch />}
         {currentView === 'notifications' && isAdmin && <BulkNotification />}
         {currentView === 'add' && <TicketForm />}
       </main>
