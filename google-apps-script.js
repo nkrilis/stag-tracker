@@ -1,311 +1,195 @@
 // Google Apps Script Backend for Stag Tracker
 // Deploy this as a Web App and use the URL in your React app
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+// Normalize a ticket number to a zero-padded 3-digit lowercase string
+function normalizeTicket(ticket) {
+  return String(ticket || '').trim().padStart(3, '0').toLowerCase();
+}
+
+// Format a ticket number for display / storage (3-digit, original case)
+function formatTicket(ticket) {
+  return String(ticket || '').trim().padStart(3, '0');
+}
+
+// Convert a 6-column row array to a ticket object
+function rowToTicket(row) {
+  return {
+    ticketNumber: String(row[0] || ''),
+    name:         String(row[1] || ''),
+    phoneNumber:  String(row[2] || ''),
+    paid:         String(row[3] || ''),
+    checkedIn:    String(row[4] || ''),
+    expected:     String(row[5] || 'Yes')
+  };
+}
+
+// Find the 1-based sheet row for a ticket number. Returns -1 if not found.
+// Reads only column A (not the full sheet) and normalizes values to handle
+// both text "001" and numeric 1 stored in cells.
+function findTicketRow(sheet, ticketNumber) {
+  var target = normalizeTicket(ticketNumber);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 3) return -1;
+  var colA = sheet.getRange(3, 1, lastRow - 2, 1).getValues();
+  for (var i = 0; i < colA.length; i++) {
+    if (normalizeTicket(colA[i][0]) === target) {
+      return i + 3; // convert 0-based array index to 1-based sheet row (data starts at row 3)
+    }
+  }
+  return -1;
+}
+
+// Shorthand JSON response
+function jsonOk(payload)  { return jsonResponse(payload); }
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ─── CORS preflight ─────────────────────────────────────────────────────────
+
 // Handle CORS preflight requests
 function doOptions(e) {
   return ContentService.createTextOutput('')
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
+// ─── GET handlers ───────────────────────────────────────────────────────────
+
 function doGet(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   
-  // Server-side search for specific ticket
+  // --- Search for a single ticket (TextFinder — reads only 1 row) -----------
   if (e.parameter.action === 'searchTicket') {
-    const ticketNumber = e.parameter.ticketNumber;
-    const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
-    
-    const allData = sheet.getDataRange().getValues();
-    
-    // Find the ticket in data rows (skip rows 1-2 for title/header)
-    for (let i = 2; i < allData.length; i++) {
-      const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
-      
-      if (existingTicket === normalizedTicket) {
-        const rowData = allData[i];
-        return ContentService.createTextOutput(JSON.stringify({ 
-          success: true, 
-          found: true,
-          data: {
-            ticketNumber: String(rowData[0] || ''),
-            name: String(rowData[1] || ''),
-            phoneNumber: String(rowData[2] || ''),
-            paid: String(rowData[3] || ''),
-            checkedIn: String(rowData[4] || ''),
-            expected: String(rowData[5] || 'Yes')
-          }
-        })).setMimeType(ContentService.MimeType.JSON);
-      }
+    var row = findTicketRow(sheet, e.parameter.ticketNumber);
+    if (row !== -1) {
+      var rowData = sheet.getRange(row, 1, 1, 6).getValues()[0];
+      return jsonOk({ success: true, found: true, data: rowToTicket(rowData) });
     }
-    
-    return ContentService.createTextOutput(JSON.stringify({ 
-      success: true, 
-      found: false 
-    })).setMimeType(ContentService.MimeType.JSON);
+    return jsonOk({ success: true, found: false });
   }
   
-  // Search for all tickets with same phone number and name (group booking)
+  // --- Group booking search (match by phone + name) -------------------------
   if (e.parameter.action === 'searchByGroup') {
-    const phoneNumber = e.parameter.phoneNumber;
-    const name = e.parameter.name;
-    
-    const allData = sheet.getDataRange().getValues();
-    const tickets = [];
-    
-    // Find all tickets with matching phone and name (skip rows 1-2 for title/header)
-    for (let i = 2; i < allData.length; i++) {
-      const rowData = allData[i];
-      const rowPhone = String(rowData[2] || '').trim();
-      const rowName = String(rowData[1] || '').trim();
-      
+    var phoneNumber = e.parameter.phoneNumber;
+    var name = e.parameter.name;
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 3) return jsonOk({ success: true, tickets: [] });
+
+    // Read all 6 columns for data rows (needed to return full ticket objects)
+    var allData = sheet.getRange(3, 1, lastRow - 2, 6).getValues();
+    var tickets = [];
+    for (var i = 0; i < allData.length; i++) {
+      var rowName = String(allData[i][1] || '').trim();
+      var rowPhone = String(allData[i][2] || '').trim();
       if (rowPhone === phoneNumber && rowName === name) {
-        tickets.push({
-          ticketNumber: String(rowData[0] || ''),
-          name: String(rowData[1] || ''),
-          phoneNumber: String(rowData[2] || ''),
-          paid: String(rowData[3] || ''),
-          checkedIn: String(rowData[4] || ''),
-          expected: String(rowData[5] || 'Yes')
-        });
+        tickets.push(rowToTicket(allData[i]));
       }
     }
-    
-    return ContentService.createTextOutput(JSON.stringify({ 
-      success: true, 
-      tickets: tickets 
-    })).setMimeType(ContentService.MimeType.JSON);
+    return jsonOk({ success: true, tickets: tickets });
   }
   
-  // Batch ticket check for existence
+  // --- Batch ticket existence check (reads only column A) -------------------
   if (e.parameter.action === 'checkTickets') {
-    const ticketNumbers = JSON.parse(e.parameter.tickets);
-    const normalizedTickets = ticketNumbers.map(t => String(t).trim().padStart(3, '0').toLowerCase());
-    
-    const allData = sheet.getDataRange().getValues();
-    const existingSet = new Set(
-      allData.slice(2).map(row => String(row[0] || '').trim().padStart(3, '0').toLowerCase())
-    );
-    
-    const existingTickets = [];
-    for (let i = 0; i < ticketNumbers.length; i++) {
-      if (existingSet.has(normalizedTickets[i])) {
-        existingTickets.push(ticketNumbers[i].padStart(3, '0'));
-      }
+    var ticketNumbers = JSON.parse(e.parameter.tickets);
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 3) return jsonOk({ success: true, existingTickets: [] });
+
+    // Read only column A instead of getDataRange() — avoids pulling all 6 cols
+    var colA = sheet.getRange(3, 1, lastRow - 2, 1).getValues();
+    var existingSet = new Set();
+    for (var i = 0; i < colA.length; i++) {
+      existingSet.add(normalizeTicket(colA[i][0]));
     }
     
-    return ContentService.createTextOutput(JSON.stringify({ 
-      success: true, 
-      existingTickets: existingTickets 
-    })).setMimeType(ContentService.MimeType.JSON);
+    var existingTickets = [];
+    for (var j = 0; j < ticketNumbers.length; j++) {
+      if (existingSet.has(normalizeTicket(ticketNumbers[j]))) {
+        existingTickets.push(formatTicket(ticketNumbers[j]));
+      }
+    }
+    return jsonOk({ success: true, existingTickets: existingTickets });
   }
   
-  // Default: return all data (fallback for backward compatibility)
-  const data = sheet.getDataRange().getValues();
-  
-  const output = ContentService.createTextOutput(JSON.stringify({ success: true, data: data }))
-    .setMimeType(ContentService.MimeType.JSON);
-  
-  return output;
+  // --- Default: return all data (live, no cache) ----------------------------
+  var data = sheet.getDataRange().getValues();
+  return jsonOk({ success: true, data: data });
 }
+
+// ─── POST handlers ──────────────────────────────────────────────────────────
 
 function doPost(e) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var action = e.parameter.action;
     
-    // Check if this is an update payment operation
-    if (e.parameter.action === 'updatePayment') {
-      const ticketNumber = e.parameter.ticketNumber;
-      const allData = sheet.getDataRange().getValues();
-      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
-      
-      // Find the row index (skip rows 1-2 for title/header, start at row 3)
-      let rowIndex = -1;
-      for (let i = 2; i < allData.length; i++) {
-        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
-        if (existingTicket === normalizedTicket) {
-          rowIndex = i + 1; // Sheet row index
-          break;
-        }
-      }
-      
-      if (rowIndex === -1) {
-        return ContentService.createTextOutput(JSON.stringify({ 
-          success: false, 
-          error: 'Ticket not found' 
-        })).setMimeType(ContentService.MimeType.JSON);
-      }
-      
-      // Update the paid status (column D, index 4)
-      sheet.getRange(rowIndex, 4).setValue('Yes');
-      
-      return ContentService.createTextOutput(JSON.stringify({ 
-        success: true 
-      })).setMimeType(ContentService.MimeType.JSON);
+    // --- Single-ticket update actions (all use TextFinder via findTicketRow) --
+    
+    if (action === 'updatePayment' || action === 'markPaid') {
+      var row = findTicketRow(sheet, e.parameter.ticketNumber);
+      if (row === -1) return jsonOk({ success: false, error: 'Ticket not found' });
+      sheet.getRange(row, 4).setValue('Yes');
+      return jsonOk({ success: true });
     }
     
-    // Check if this is a combined payment + check-in operation
-    if (e.parameter.action === 'payAndCheckIn') {
-      const ticketNumber = e.parameter.ticketNumber;
-      const allData = sheet.getDataRange().getValues();
-      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
-      
-      // Find the row index (skip rows 1-2 for title/header, start at row 3)
-      let rowIndex = -1;
-      for (let i = 2; i < allData.length; i++) {
-        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
-        if (existingTicket === normalizedTicket) {
-          rowIndex = i + 1; // Sheet row index
-          break;
-        }
-      }
-      
-      if (rowIndex === -1) {
-        return ContentService.createTextOutput(JSON.stringify({ 
-          success: false, 
-          error: 'Ticket not found' 
-        })).setMimeType(ContentService.MimeType.JSON);
-      }
-      
-      // Update both paid (column D) and checked in (column E) in one batch
-      const timestamp = new Date().toLocaleString();
-      sheet.getRange(rowIndex, 4, 1, 2).setValues([['Yes', 'Yes']]);
-      
-      return ContentService.createTextOutput(JSON.stringify({ 
-        success: true,
-        timestamp: timestamp
-      })).setMimeType(ContentService.MimeType.JSON);
+    if (action === 'markUnpaid') {
+      var row = findTicketRow(sheet, e.parameter.ticketNumber);
+      if (row === -1) return jsonOk({ success: false, error: 'Ticket not found' });
+      sheet.getRange(row, 4).setValue('No');
+      return jsonOk({ success: true });
     }
     
-    // Check if this is a mark as paid operation
-    if (e.parameter.action === 'markPaid') {
-      const ticketNumber = e.parameter.ticketNumber;
-      const allData = sheet.getDataRange().getValues();
-      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
-      
-      // Find the row index (skip rows 1-2 for title/header, start at row 3)
-      let rowIndex = -1;
-      for (let i = 2; i < allData.length; i++) {
-        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
-        if (existingTicket === normalizedTicket) {
-          rowIndex = i + 1; // Sheet row index
-          break;
-        }
-      }
-      
-      if (rowIndex === -1) {
-        return ContentService.createTextOutput(JSON.stringify({ 
-          success: false, 
-          error: 'Ticket not found' 
-        })).setMimeType(ContentService.MimeType.JSON);
-      }
-      
-      // Update the paid status (column D, index 4)
-      sheet.getRange(rowIndex, 4).setValue('Yes');
-      
-      return ContentService.createTextOutput(JSON.stringify({ 
-        success: true 
-      })).setMimeType(ContentService.MimeType.JSON);
+    if (action === 'payAndCheckIn') {
+      var row = findTicketRow(sheet, e.parameter.ticketNumber);
+      if (row === -1) return jsonOk({ success: false, error: 'Ticket not found' });
+      var timestamp = new Date().toLocaleString();
+      sheet.getRange(row, 4, 1, 2).setValues([['Yes', 'Yes']]);
+      return jsonOk({ success: true, timestamp: timestamp });
     }
     
-    // Check if this is a mark as unpaid operation
-    if (e.parameter.action === 'markUnpaid') {
-      const ticketNumber = e.parameter.ticketNumber;
-      const allData = sheet.getDataRange().getValues();
-      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
-      
-      // Find the row index (skip rows 1-2 for title/header, start at row 3)
-      let rowIndex = -1;
-      for (let i = 2; i < allData.length; i++) {
-        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
-        if (existingTicket === normalizedTicket) {
-          rowIndex = i + 1; // Sheet row index
-          break;
-        }
-      }
-      
-      if (rowIndex === -1) {
-        return ContentService.createTextOutput(JSON.stringify({ 
-          success: false, 
-          error: 'Ticket not found' 
-        })).setMimeType(ContentService.MimeType.JSON);
-      }
-      
-      // Update the paid status (column D, index 4)
-      sheet.getRange(rowIndex, 4).setValue('No');
-      
-      return ContentService.createTextOutput(JSON.stringify({ 
-        success: true 
-      })).setMimeType(ContentService.MimeType.JSON);
+    if (action === 'checkIn') {
+      var row = findTicketRow(sheet, e.parameter.ticketNumber);
+      if (row === -1) return jsonOk({ success: false, error: 'Ticket not found' });
+      var timestamp = new Date().toLocaleString();
+      sheet.getRange(row, 5).setValue('Yes');
+      return jsonOk({ success: true, timestamp: timestamp });
     }
     
-    // Check if this is a check-in operation
-    if (e.parameter.action === 'checkIn') {
-      const ticketNumber = e.parameter.ticketNumber;
-      const allData = sheet.getDataRange().getValues();
-      const normalizedTicket = String(ticketNumber || '').trim().padStart(3, '0').toLowerCase();
-      
-      // Find the row index (skip rows 1-2 for title/header, start at row 3)
-      let rowIndex = -1;
-      for (let i = 2; i < allData.length; i++) {
-        const existingTicket = String(allData[i][0] || '').trim().padStart(3, '0').toLowerCase();
-        if (existingTicket === normalizedTicket) {
-          rowIndex = i + 1; // Sheet row index
-          break;
-        }
-      }
-      
-      if (rowIndex === -1) {
-        return ContentService.createTextOutput(JSON.stringify({ 
-          success: false, 
-          error: 'Ticket not found' 
-        })).setMimeType(ContentService.MimeType.JSON);
-      }
-      
-      // Update the checked in status (column E, index 5)
-      // Also record the timestamp
-      const timestamp = new Date().toLocaleString();
-      sheet.getRange(rowIndex, 5).setValue('Yes');
-      
-      return ContentService.createTextOutput(JSON.stringify({ 
-        success: true,
-        timestamp: timestamp
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    // Check if this is a batch operation
+    // --- Batch insert (bulk setValues instead of per-row appendRow) ----------
     if (e.parameter.batch === 'true') {
-      const tickets = JSON.parse(e.parameter.tickets);
+      var tickets = JSON.parse(e.parameter.tickets);
+      var lastRow = sheet.getLastRow();
       
-      // Get existing ticket numbers for duplicate checking (skip rows 1-2)
-      const allData = sheet.getDataRange().getValues();
-      const existingTickets = new Set(
-        allData.slice(2).map(row => 
-          String(row[0] || '').trim().padStart(3, '0').toLowerCase()
-        )
-      );
+      // Read only column A for duplicate checking
+      var existingTickets = new Set();
+      if (lastRow >= 3) {
+        var colA = sheet.getRange(3, 1, lastRow - 2, 1).getValues();
+        for (var i = 0; i < colA.length; i++) {
+          existingTickets.add(normalizeTicket(colA[i][0]));
+        }
+      }
       
-      let added = 0;
-      let failed = [];
+      var added = 0;
+      var failed = [];
+      var newRows = [];
       
-      // Process each ticket
-      for (const ticket of tickets) {
-        const normalizedTicket = String(ticket.ticketNumber || '').trim().padStart(3, '0').toLowerCase();
+      for (var t = 0; t < tickets.length; t++) {
+        var ticket = tickets[t];
+        var norm = normalizeTicket(ticket.ticketNumber);
         
-        // Skip if already exists
-        if (existingTickets.has(normalizedTicket)) {
+        if (existingTickets.has(norm)) {
           failed.push(ticket.ticketNumber);
           continue;
         }
         
-        // Format ticket number and append
-        const formattedTicketNumber = String(ticket.ticketNumber).trim().padStart(3, '0');
-        // Convert boolean values (handle both boolean and string)
-        const isPaid = ticket.paid === true || ticket.paid === 'true';
-        const isCheckedIn = ticket.checkedIn === true || ticket.checkedIn === 'true';
-        const isExpected = ticket.expected === true || ticket.expected === 'true';
+        var isPaid = ticket.paid === true || ticket.paid === 'true';
+        var isCheckedIn = ticket.checkedIn === true || ticket.checkedIn === 'true';
+        var isExpected = ticket.expected === true || ticket.expected === 'true';
         
-        sheet.appendRow([
-          formattedTicketNumber,
+        newRows.push([
+          formatTicket(ticket.ticketNumber),
           ticket.name,
           ticket.phoneNumber,
           isPaid ? 'Yes' : 'No',
@@ -313,70 +197,45 @@ function doPost(e) {
           isExpected ? 'Yes' : 'No'
         ]);
         
-        // Add to set to prevent duplicates within batch
-        existingTickets.add(normalizedTicket);
+        existingTickets.add(norm);
         added++;
       }
       
-      return ContentService.createTextOutput(JSON.stringify({ 
-        success: true,
-        added: added,
-        failed: failed
-      })).setMimeType(ContentService.MimeType.JSON);
+      // Single bulk write instead of N appendRow calls
+      if (newRows.length > 0) {
+        sheet.getRange(lastRow + 1, 1, newRows.length, 6).setValues(newRows);
+      }
+      
+      return jsonOk({ success: true, added: added, failed: failed });
     }
     
-    // Single ticket operation (original code)
-    const data = {
+    // --- Single ticket creation ----------------------------------------------
+    var data = {
       ticketNumber: e.parameter.ticketNumber,
       name: e.parameter.name,
       phoneNumber: e.parameter.phoneNumber,
       paid: e.parameter.paid === 'true',
-      checkedIn: e.parameter.checkedIn === 'true', // EVENT DAY: Support checkedIn parameter
-      expected: e.parameter.expected === 'true' || e.parameter.expected === undefined // Default to true if not provided
+      checkedIn: e.parameter.checkedIn === 'true',
+      expected: e.parameter.expected === 'true' || e.parameter.expected === undefined
     };
     
-    // Check if ticket number already exists (normalized to 3 digits, skip rows 1-2)
-    const allData = sheet.getDataRange().getValues();
-    const normalizedTicket = String(data.ticketNumber || '').trim().padStart(3, '0').toLowerCase();
-    const ticketNumbers = allData.slice(2).map(row => 
-      String(row[0] || '').trim().padStart(3, '0').toLowerCase()
-    );
-    
-    if (ticketNumbers.includes(normalizedTicket)) {
-      const output = ContentService.createTextOutput(JSON.stringify({ 
-        success: false, 
-        error: 'Ticket number already exists' 
-      })).setMimeType(ContentService.MimeType.JSON);
-      
-      return output;
+    // Use TextFinder to check for duplicate (no full sheet read)
+    if (findTicketRow(sheet, data.ticketNumber) !== -1) {
+      return jsonOk({ success: false, error: 'Ticket number already exists' });
     }
     
-    // Format ticket number as 3 digits before appending
-    const formattedTicketNumber = String(data.ticketNumber).trim().padStart(3, '0');
-    
-    // EVENT DAY MODE: Use data.checkedIn if provided
-    // ORIGINAL MODE: Always set to 'No' for pre-sale
-    // Append new row
     sheet.appendRow([
-      formattedTicketNumber,
+      formatTicket(data.ticketNumber),
       data.name,
       data.phoneNumber,
       data.paid ? 'Yes' : 'No',
-      data.checkedIn ? 'Yes' : 'No', // EVENT DAY: Supports checking in on creation
-      data.expected ? 'Yes' : 'No' // Track if customer expected to attend
+      data.checkedIn ? 'Yes' : 'No',
+      data.expected ? 'Yes' : 'No'
     ]);
     
-    const output = ContentService.createTextOutput(JSON.stringify({ success: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-    
-    return output;
+    return jsonOk({ success: true });
       
   } catch (error) {
-    const output = ContentService.createTextOutput(JSON.stringify({ 
-      success: false, 
-      error: error.toString() 
-    })).setMimeType(ContentService.MimeType.JSON);
-    
-    return output;
+    return jsonOk({ success: false, error: error.toString() });
   }
 }
