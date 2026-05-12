@@ -5,11 +5,11 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
 UID:stag-dinner-2026@stagtracker.com
-DTSTAMP:20260127T000000Z
-DTSTART:20260307T000000Z
-DTEND:20260307T050000Z
-SUMMARY:Gentleman's Dinner in Honor of Christopher Krilis
-LOCATION:The Terrace Event Venue\, 1680 Creditstone Rd\, Vaughan\, ON L4K 5V6
+DTSTAMP:20260814T230000Z 
+DTSTART:20260814T230000Z
+DTEND:20260815T040000Z
+SUMMARY:Gentleman's Dinner in Honor of Nicholas Krilis
+LOCATION:La Primavera Event Space\, 77 Woodstream Blvd\, Woodbridge\, ON L4L 7Y6
 DESCRIPTION:Join us for Nick's Gentleman's Dinner!
 STATUS:CONFIRMED
 TRANSP:OPAQUE
