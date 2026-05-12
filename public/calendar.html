@@ -72,17 +72,17 @@
 <body>
     <div class="container">
         <h1>📅</h1>
-        <div class="event-title">Gentleman's Dinner in Honor of Christopher Krilis</div>
+        <div class="event-title">Gentleman's Dinner in Honor of Nicholas Krilis</div>
         <div class="details">
             <div class="detail-row">
                 <span class="detail-icon">📅</span>
-                <span>Friday, March 6, 2026 at 7:00 PM</span>
+                <span>Friday, August 14, 2026 at 7:00 PM</span>
             </div>
             <div class="detail-row">
                 <span class="detail-icon">📍</span>
                 <div>
-                    <div><strong>The Terrace Event Venue</strong></div>
-                    <div>1680 Creditstone Rd, Vaughan, ON L4K 5V6</div>
+                    <div><strong>La Primavera Event Space</strong></div>
+                    <div>77 Woodstream Blvd, Woodbridge, ON L4L 7Y6</div>
                 </div>
             </div>
         </div>
@@ -101,10 +101,10 @@ METHOD:PUBLISH
 BEGIN:VEVENT
 UID:stag-dinner-2026@stagtracker.com
 DTSTAMP:20260127T000000Z
-DTSTART:20260307T000000Z
-DTEND:20260307T050000Z
-SUMMARY:Gentleman's Dinner in Honor of Christopher Krilis
-LOCATION:The Terrace Event Venue\\, 1680 Creditstone Rd\\, Vaughan\\, ON L4K 5V6
+DTSTART:20260814T230000Z
+DTEND:20260815T040000Z
+SUMMARY:Gentleman's Dinner in Honor of Nicholas Krilis
+LOCATION:La Primavera Event Space\\, 77 Woodstream Blvd\\, Woodbridge\\, ON L4L 7Y6
 DESCRIPTION:Join us for Nick's Gentleman's Dinner!
 STATUS:CONFIRMED
 TRANSP:OPAQUE
@@ -116,7 +116,7 @@ END:VCALENDAR`;
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'Christopher-Dinner.ics';
+            link.download = 'Nicholas-Dinner.ics';
             link.click();
             URL.revokeObjectURL(url);
             
