@@ -2,6 +2,8 @@ import { useState, FormEvent } from 'react';
 import { supabase, ADMIN_EMAIL } from '../config/supabase';
 import './Login.css';
 
+const INVITE_CODE = (import.meta.env.VITE_INVITE_CODE ?? '').trim();
+
 interface SignupProps {
   onSwitchToLogin: () => void;
 }
@@ -10,6 +12,7 @@ export function Signup({ onSwitchToLogin }: SignupProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,6 +23,16 @@ export function Signup({ onSwitchToLogin }: SignupProps) {
     setInfo('');
 
     const normalizedEmail = email.trim().toLowerCase();
+
+    if (!INVITE_CODE) {
+      setError('Signup is not configured. Please contact the administrator.');
+      return;
+    }
+
+    if (inviteCode.trim() !== INVITE_CODE) {
+      setError('Invalid invite code.');
+      return;
+    }
 
     // Staff-only signup. The admin account must be created by an existing
     // admin via the Supabase dashboard (Authentication -> Users).
@@ -117,13 +130,26 @@ export function Signup({ onSwitchToLogin }: SignupProps) {
             />
           </div>
 
+          <div className="form-group">
+            <label htmlFor="inviteCode">Invite Code</label>
+            <input
+              type="text"
+              id="inviteCode"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="Provided by the administrator"
+              autoComplete="off"
+              required
+            />
+          </div>
+
           {error && <div className="login-error">{error}</div>}
           {info && <div className="login-info">{info}</div>}
 
           <button
             type="submit"
             className="login-button"
-            disabled={loading || !email || !password || !confirmPassword}
+            disabled={loading || !email || !password || !confirmPassword || !inviteCode}
           >
             {loading ? 'Creating account...' : 'Create Staff Account'}
           </button>
