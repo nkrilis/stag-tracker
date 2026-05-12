@@ -20,6 +20,7 @@ export function TicketHolders() {
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<TicketHolderInput>(emptyForm);
+  const [userEmails, setUserEmails] = useState<string[]>([]);
 
   const load = async () => {
     setLoading(true);
@@ -33,8 +34,17 @@ export function TicketHolders() {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      setUserEmails(await ticketHolderService.listUserEmails());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     load();
+    loadUsers();
   }, []);
 
   const resetForm = () => {
@@ -110,13 +120,29 @@ export function TicketHolders() {
         <div className="form-grid">
           <label>
             Holder email
-            <input
-              type="email"
+            <select
               value={form.holderEmail}
               onChange={(e) => setForm({ ...form, holderEmail: e.target.value })}
-              placeholder="staff@example.com"
               required
-            />
+            >
+              <option value="">Select a user…</option>
+              {/* When editing, ensure the current value is selectable even if
+                  the user is no longer in the list. */}
+              {form.holderEmail &&
+                !userEmails.includes(form.holderEmail) && (
+                  <option value={form.holderEmail}>{form.holderEmail}</option>
+                )}
+              {userEmails.map((email) => (
+                <option key={email} value={email}>
+                  {email}
+                </option>
+              ))}
+            </select>
+            {userEmails.length === 0 && (
+              <small className="hint">
+                No users found. Invite users in Supabase → Authentication → Users.
+              </small>
+            )}
           </label>
           <label>
             Range start

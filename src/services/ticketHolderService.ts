@@ -95,6 +95,21 @@ export const ticketHolderService = {
   },
 
   /**
+   * Admin-only: returns all signed-up user emails (via SECURITY DEFINER RPC).
+   * Returns [] for non-admins (the SQL function filters by JWT email).
+   */
+  async listUserEmails(): Promise<string[]> {
+    const { data, error } = await supabase.rpc('list_app_users');
+    if (error) {
+      console.error('list_app_users error:', error);
+      return [];
+    }
+    return (data ?? [])
+      .map((r: { email: string | null }) => r.email)
+      .filter((e: string | null): e is string => !!e);
+  },
+
+  /**
    * Returns the assignments belonging to the currently signed-in user.
    * Relies on RLS — staff users only ever see their own rows.
    */

@@ -133,6 +133,27 @@ create policy "ticket_holders admin delete"
   to authenticated
   using (lower(coalesce(auth.jwt() ->> 'email', '')) = 'n.krilis@icloud.com');
 
+-- ---------- Admin helper: list app users ----------
+-- The anon/authenticated client cannot read auth.users directly, so we
+-- expose a SECURITY DEFINER function that returns user emails ONLY when
+-- the caller is the admin. The TicketHolders admin UI calls this via
+-- supabase.rpc('list_app_users') to populate a dropdown of holder emails.
+create or replace function public.list_app_users()
+returns table (email text)
+language sql
+security definer
+set search_path = public, auth
+as $$
+  select u.email::text
+  from auth.users u
+  where lower(coalesce(auth.jwt() ->> 'email', '')) = 'n.krilis@icloud.com'
+    and u.email is not null
+  order by u.email;
+$$;
+
+revoke all on function public.list_app_users() from public;
+grant execute on function public.list_app_users() to authenticated;
+
 -- ---------- Auth notes ----------
 -- 1. In Supabase Dashboard -> Authentication -> Providers, ensure "Email" is
 --    enabled and "Confirm email" is set to your preference.
