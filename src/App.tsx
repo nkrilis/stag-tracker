@@ -186,7 +186,7 @@ function App() {
         {currentView === 'payment' && (!EVENT_DAY || isAdmin) && <PaymentSearch />}
         {currentView === 'notifications' && isAdmin && <BulkNotification />}
         {currentView === 'holders' && isAdmin && <TicketHolders />}
-        {currentView === 'add' && <TicketForm />}
+        {currentView === 'add' && <TicketForm isAdmin={isAdmin} />}
       </main>
     </div>
   );

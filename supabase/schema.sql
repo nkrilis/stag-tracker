@@ -100,6 +100,7 @@ alter table public.ticket_holders enable row level security;
 -- IMPORTANT: replace the email below with your admin email if it differs.
 -- It must match VITE_ADMIN_EMAIL in the client .env (case-insensitive).
 drop policy if exists "ticket_holders admin select" on public.ticket_holders;
+drop policy if exists "ticket_holders self select"  on public.ticket_holders;
 drop policy if exists "ticket_holders admin insert" on public.ticket_holders;
 drop policy if exists "ticket_holders admin update" on public.ticket_holders;
 drop policy if exists "ticket_holders admin delete" on public.ticket_holders;
@@ -108,6 +109,13 @@ create policy "ticket_holders admin select"
   on public.ticket_holders for select
   to authenticated
   using (lower(coalesce(auth.jwt() ->> 'email', '')) = 'n.krilis@icloud.com');
+
+-- Staff may read only their OWN assignments (used by the ticket-entry form
+-- to validate that a staff member is only adding tickets in their range).
+create policy "ticket_holders self select"
+  on public.ticket_holders for select
+  to authenticated
+  using (lower(holder_email) = lower(coalesce(auth.jwt() ->> 'email', '')));
 
 create policy "ticket_holders admin insert"
   on public.ticket_holders for insert
