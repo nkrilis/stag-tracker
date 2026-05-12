@@ -9,7 +9,7 @@ import { BulkCheckIn } from './components/BulkCheckIn';
 import { BulkNotification } from './components/BulkNotification';
 import { TicketHolders } from './components/TicketHolders';
 import { EVENT_DAY } from './config/appMode';
-import { supabase, ADMIN_EMAIL } from './config/supabase';
+import { supabase, ADMIN_EMAIL, SUPABASE_CONFIGURED } from './config/supabase';
 import './App.css';
 
 type View = 'dashboard' | 'add' | 'bulk' | 'search' | 'payment' | 'notifications' | 'holders';
@@ -64,6 +64,19 @@ function App() {
 
   if (authLoading) {
     return <div className="app-loading">Loading…</div>;
+  }
+
+  if (!SUPABASE_CONFIGURED) {
+    return (
+      <div className="app-loading" style={{ padding: 24, color: 'white', textAlign: 'center' }}>
+        <h2>Configuration error</h2>
+        <p>
+          Supabase environment variables are missing.<br />
+          Set <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>,
+          and <code>VITE_ADMIN_EMAIL</code> as repository secrets and redeploy.
+        </p>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {

@@ -7,17 +7,26 @@ if (!supabaseUrl || !supabaseAnonKey) {
   // eslint-disable-next-line no-console
   console.error(
     'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. ' +
-      'Copy .env.example to .env and fill in your Supabase project credentials.'
+      'In local dev, copy .env.example to .env. In CI, add them as repository secrets.'
   );
 }
 
-export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '', {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false,
-  },
-});
+// Fall back to a syntactically valid placeholder URL so createClient does not
+// throw at module-load time when env vars are missing (keeps the React tree
+// rendering so the user sees an error message instead of a blank page).
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-anon-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+    },
+  }
+);
+
+export const SUPABASE_CONFIGURED = Boolean(supabaseUrl && supabaseAnonKey);
 
 export const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL ?? '').toLowerCase();
 
