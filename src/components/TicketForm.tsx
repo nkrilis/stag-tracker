@@ -1,10 +1,15 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { ticketService } from '../services/ticketService';
+import { ticketHolderService } from '../services/ticketHolderService';
 import { TicketInput } from '../config/supabase';
 import { EVENT_DAY } from '../config/appMode';
 import './TicketForm.css';
 
-export function TicketForm() {
+interface TicketFormProps {
+  isAdmin: boolean;
+}
+
+export function TicketForm({ isAdmin }: TicketFormProps) {
   const [formData, setFormData] = useState<TicketInput>({
     ticketNumber: '',
     name: '',
@@ -21,8 +26,25 @@ export function TicketForm() {
   const [duplicates, setDuplicates] = useState<string[]>([]);
   const [ticketCount, setTicketCount] = useState(0);
   const [phoneError, setPhoneError] = useState<string>('');
+  const [myRanges, setMyRanges] = useState<Array<{ start: string; end: string }>>([]);
+  const [outOfRange, setOutOfRange] = useState<string[]>([]);
 
   const MAX_BATCH_SIZE = 50;
+
+  // Fetch the signed-in user's assigned ticket ranges (admin can add anything).
+  useEffect(() => {
+    if (isAdmin) {
+      setMyRanges([]);
+      return;
+    }
+    ticketHolderService.getMyRanges().then(setMyRanges);
+  }, [isAdmin]);
+
+  const isInMyRanges = (ticket: string): boolean => {
+    if (isAdmin) return true;
+    if (myRanges.length === 0) return false;
+    return myRanges.some((r) => ticket >= r.start && ticket <= r.end);
+  };
 
   // Validate phone number (10 digits)
   const validatePhoneNumber = (phone: string): boolean => {
@@ -85,16 +107,20 @@ export function TicketForm() {
       try {
         const tickets = parseTicketNumbers(input);
         setTicketCount(tickets.length);
-        
+
+        // Flag any tickets that fall outside the user's assigned ranges.
+        setOutOfRange(tickets.filter((t) => !isInMyRanges(t)));
+
         // Use batch checking for better performance
         const existingTickets = await ticketService.checkMultipleTickets(tickets);
-        
+
         setDuplicates(existingTickets);
         setTicketExists(existingTickets.length > 0);
       } catch (error) {
         console.error('Error checking ticket:', error);
         setTicketExists(false);
         setDuplicates([]);
+        setOutOfRange([]);
       } finally {
         setChecking(false);
       }
@@ -102,13 +128,29 @@ export function TicketForm() {
 
     const timer = setTimeout(checkTicketNumbers, 500);
     return () => clearTimeout(timer);
-  }, [formData.ticketNumber]);
+  }, [formData.ticketNumber, isAdmin, myRanges]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (ticketExists) {
       setMessage({ type: 'error', text: `Ticket(s) already exist: ${duplicates.join(', ')}` });
+      return;
+    }
+
+    if (outOfRange.length > 0) {
+      setMessage({
+        type: 'error',
+        text: `These tickets are not in your assigned range: ${outOfRange.join(', ')}`,
+      });
+      return;
+    }
+
+    if (!isAdmin && myRanges.length === 0) {
+      setMessage({
+        type: 'error',
+        text: 'You have no assigned ticket ranges. Ask the administrator to assign tickets to you before adding entries.',
+      });
       return;
     }
 
@@ -159,6 +201,7 @@ export function TicketForm() {
         });
         setTicketExists(false);
         setDuplicates([]);
+        setOutOfRange([]);
       } else {
         setMessage({ 
           type: 'error', 
@@ -225,6 +268,22 @@ export function TicketForm() {
             <span className="error-text">
               ⚠️ Already exist: {duplicates.join(', ')}
             </span>
+          )}
+          {outOfRange.length > 0 && (
+            <span className="error-text">
+              ⚠️ Not in your assigned range: {outOfRange.join(', ')}
+            </span>
+          )}
+          {!isAdmin && myRanges.length > 0 && (
+            <small style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+              Your assigned ranges:{' '}
+              {myRanges.map((r) => `#${r.start}–#${r.end}`).join(', ')}
+            </small>
+          )}
+          {!isAdmin && myRanges.length === 0 && (
+            <small style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+              You have no assigned ticket ranges. Ask the administrator.
+            </small>
           )}
         </div>
 
@@ -310,7 +369,7 @@ export function TicketForm() {
         )}
         {/* ========== END TOGGLE ========== */}
 
-        <button type="submit" disabled={loading || checking || ticketExists || ticketCount > MAX_BATCH_SIZE} className="submit-button">
+        <button type="submit" disabled={loading || checking || ticketExists || ticketCount > MAX_BATCH_SIZE || outOfRange.length > 0 || (!isAdmin && myRanges.length === 0)} className="submit-button">
           {loading ? 'Adding Tickets...' : 'Add Ticket(s)'}
         </button>
 

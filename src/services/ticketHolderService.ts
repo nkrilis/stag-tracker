@@ -93,4 +93,24 @@ export const ticketHolderService = {
     }
     return true;
   },
+
+  /**
+   * Returns the assignments belonging to the currently signed-in user.
+   * Relies on RLS — staff users only ever see their own rows.
+   */
+  async getMyRanges(): Promise<Array<{ start: string; end: string }>> {
+    const email = getCurrentUserEmail();
+    if (!email) return [];
+
+    const { data, error } = await supabase
+      .from('ticket_holders')
+      .select('range_start, range_end')
+      .eq('holder_email', email);
+
+    if (error) {
+      console.error('getMyRanges error:', error);
+      return [];
+    }
+    return (data ?? []).map((r) => ({ start: r.range_start, end: r.range_end }));
+  },
 };
