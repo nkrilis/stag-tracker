@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sheetsService } from '../services/googleSheetsService';
+import { ticketService } from '../services/ticketService';
 import './GuestSearch.css';
 
 interface PaymentModalData {
@@ -40,8 +40,8 @@ export function GuestSearch() {
 
   const loadAllTickets = async () => {
     try {
-      const rows = await sheetsService.getRows();
-      setAllTickets(rows.slice(2)); // Skip title row and header row
+      const rows = await ticketService.getRows();
+      setAllTickets(rows);
     } catch (error) {
       console.error('Failed to load tickets:', error);
     }
@@ -91,7 +91,7 @@ export function GuestSearch() {
 
     // Proceed with check-in for paid tickets
     try {
-      await sheetsService.checkInTicket(ticketNumber);
+      await ticketService.checkInTicket(ticketNumber);
       // Refresh the tickets to update status
       await loadAllTickets();
     } catch (error) {
@@ -109,7 +109,7 @@ export function GuestSearch() {
 
     try {
       // Combined payment + check-in (faster - single operation)
-      await sheetsService.payAndCheckIn(ticket);
+      await ticketService.payAndCheckIn(ticket);
       // Refresh the tickets to update status
       await loadAllTickets();
     } catch (error) {
@@ -174,6 +174,8 @@ export function GuestSearch() {
                 {results.map((row, index) => {
                   const isCheckedIn = row[4] === 'Yes';
                   const isPaid = row[3] === 'Yes';
+                  const paidBy = row[7] || '';
+                  const checkedInBy = row[8] || '';
                   return (
                     <li key={index} className={isCheckedIn ? 'checked-in' : ''}>
                       <div className="result-info">
@@ -181,6 +183,12 @@ export function GuestSearch() {
                         <div className="result-name-phone">
                           <span className="result-name">{row[1]}</span>
                           <span className="result-phone">{row[2]}</span>
+                          {(isPaid && paidBy) || (isCheckedIn && checkedInBy) ? (
+                            <span className="result-audit">
+                              {isPaid && paidBy && <span>💵 by {paidBy}</span>}
+                              {isCheckedIn && checkedInBy && <span>✓ by {checkedInBy}</span>}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                       <div className="result-actions">

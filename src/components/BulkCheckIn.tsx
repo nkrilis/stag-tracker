@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { sheetsService } from '../services/googleSheetsService';
+import { ticketService } from '../services/ticketService';
 import './BulkCheckIn.css';
 
 interface CheckInResult {
@@ -87,7 +87,7 @@ export function BulkCheckIn() {
 
     try {
       // Search for ticket
-      const searchResult = await sheetsService.searchTicket(ticket);
+      const searchResult = await ticketService.searchTicket(ticket);
       
       if (!searchResult.found || !searchResult.data) {
         const result: CheckInResult = {
@@ -123,7 +123,7 @@ export function BulkCheckIn() {
       }
 
       // Search for all tickets with the same phone number and name (group/company booking)
-      const groupResult = await sheetsService.searchTicketsByGroup(
+      const groupResult = await ticketService.searchTicketsByGroup(
         ticketData.phoneNumber,
         ticketData.name
       );
@@ -253,10 +253,10 @@ export function BulkCheckIn() {
       try {
         if (guest.paid) {
           // Just check in
-          await sheetsService.checkInTicket(guest.ticketNumber);
+          await ticketService.checkInTicket(guest.ticketNumber);
         } else {
           // Pay and check in
-          await sheetsService.payAndCheckIn(guest.ticketNumber);
+          await ticketService.payAndCheckIn(guest.ticketNumber);
         }
         
         const result: CheckInResult = {

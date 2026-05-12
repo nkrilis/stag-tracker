@@ -1,0 +1,232 @@
+import { supabase, TicketRow, TicketInput, getCurrentUserEmail } from '../config/supabase';
+
+const yn = (v: boolean): 'Yes' | 'No' => (v ? 'Yes' : 'No');
+
+const pad = (t: string): string => t.trim().padStart(3, '0');
+
+// Row layout (legacy positional shape kept for existing consumers):
+//   0 ticket_number | 1 name | 2 phone | 3 paid | 4 checked_in | 5 expected
+//   6 created_by    | 7 paid_by | 8 checked_in_by
+const rowToArray = (r: TicketRow): string[] => [
+  r.ticket_number,
+  r.name,
+  r.phone_number,
+  yn(r.paid),
+  yn(r.checked_in),
+  yn(r.expected),
+  r.created_by ?? '',
+  r.paid_by ?? '',
+  r.checked_in_by ?? '',
+];
+
+const rowToFlat = (r: TicketRow) => ({
+  ticketNumber: r.ticket_number,
+  name: r.name,
+  phoneNumber: r.phone_number,
+  paid: yn(r.paid),
+  checkedIn: yn(r.checked_in),
+  expected: yn(r.expected),
+  createdBy: r.created_by ?? '',
+  paidBy: r.paid_by ?? '',
+  checkedInBy: r.checked_in_by ?? '',
+});
+
+export class TicketService {
+  /**
+   * Fetch all tickets in array-of-arrays form (legacy shape).
+   * Order: ticketNumber, name, phoneNumber, paid, checkedIn, expected.
+   */
+  async getRows(): Promise<string[][]> {
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .order('ticket_number', { ascending: true });
+
+    if (error) {
+      console.error('getRows failed:', error);
+      throw error;
+    }
+
+    return (data ?? []).map(rowToArray);
+  }
+
+  async searchTicket(ticketNumber: string) {
+    const normalized = pad(ticketNumber);
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('ticket_number', normalized)
+      .maybeSingle();
+
+    if (error) {
+      console.error('searchTicket failed:', error);
+      return { found: false } as const;
+    }
+
+    if (!data) return { found: false } as const;
+    return { found: true, data: rowToFlat(data as TicketRow) };
+  }
+
+  async ticketExists(ticketNumber: string): Promise<boolean> {
+    const result = await this.searchTicket(ticketNumber);
+    return result.found;
+  }
+
+  async searchTicketsByGroup(phoneNumber: string, name: string) {
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('phone_number', phoneNumber)
+      .eq('name', name);
+
+    if (error) {
+      console.error('searchTicketsByGroup failed:', error);
+      return { success: false, tickets: [] as ReturnType<typeof rowToFlat>[] };
+    }
+
+    return {
+      success: true,
+      tickets: (data ?? []).map((r) => rowToFlat(r as TicketRow)),
+    };
+  }
+
+  async checkMultipleTickets(ticketNumbers: string[]): Promise<string[]> {
+    if (ticketNumbers.length === 0) return [];
+    const normalized = ticketNumbers.map(pad);
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('ticket_number')
+      .in('ticket_number', normalized);
+
+    if (error) {
+      console.error('checkMultipleTickets failed:', error);
+      return [];
+    }
+
+    return (data ?? []).map((r) => r.ticket_number);
+  }
+
+  async appendMultipleTickets(
+    tickets: TicketInput[]
+  ): Promise<{ success: number; failed: string[] }> {
+    if (tickets.length === 0) return { success: 0, failed: [] };
+
+    const now = new Date().toISOString();
+    const actor = getCurrentUserEmail();
+    const rows = tickets.map((t) => ({
+      ticket_number: pad(t.ticketNumber),
+      name: t.name,
+      phone_number: t.phoneNumber,
+      paid: t.paid,
+      checked_in: t.checkedIn,
+      expected: t.expected,
+      paid_at: t.paid ? now : null,
+      checked_in_at: t.checkedIn ? now : null,
+      created_by: actor,
+      paid_by: t.paid ? actor : null,
+      checked_in_by: t.checkedIn ? actor : null,
+    }));
+
+    const { data, error } = await supabase
+      .from('tickets')
+      .insert(rows)
+      .select('ticket_number');
+
+    if (error) {
+      console.error('appendMultipleTickets failed:', error);
+      // On a batch failure, treat the whole batch as failed.
+      return { success: 0, failed: rows.map((r) => r.ticket_number) };
+    }
+
+    const insertedNumbers = new Set((data ?? []).map((r) => r.ticket_number));
+    const failed = rows
+      .map((r) => r.ticket_number)
+      .filter((n) => !insertedNumbers.has(n));
+
+    return { success: insertedNumbers.size, failed };
+  }
+
+  async appendTicket(t: TicketInput): Promise<boolean> {
+    const result = await this.appendMultipleTickets([t]);
+    if (result.success !== 1) {
+      throw new Error(`Failed to add ticket ${t.ticketNumber}`);
+    }
+    return true;
+  }
+
+  async markAsPaid(ticketNumber: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('tickets')
+      .update({
+        paid: true,
+        paid_at: new Date().toISOString(),
+        paid_by: getCurrentUserEmail(),
+      })
+      .eq('ticket_number', pad(ticketNumber));
+
+    if (error) {
+      console.error('markAsPaid failed:', error);
+      throw error;
+    }
+    return true;
+  }
+
+  async markAsUnpaid(ticketNumber: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('tickets')
+      .update({ paid: false, paid_at: null, paid_by: null })
+      .eq('ticket_number', pad(ticketNumber));
+
+    if (error) {
+      console.error('markAsUnpaid failed:', error);
+      throw error;
+    }
+    return true;
+  }
+
+  /** Toggle/set payment status (alias kept for legacy callers). */
+  async updatePaymentStatus(ticketNumber: string): Promise<boolean> {
+    return this.markAsPaid(ticketNumber);
+  }
+
+  async checkInTicket(ticketNumber: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('tickets')
+      .update({
+        checked_in: true,
+        checked_in_at: new Date().toISOString(),
+        checked_in_by: getCurrentUserEmail(),
+      })
+      .eq('ticket_number', pad(ticketNumber));
+
+    if (error) {
+      console.error('checkInTicket failed:', error);
+      throw error;
+    }
+    return true;
+  }
+
+  async payAndCheckIn(ticketNumber: string): Promise<boolean> {
+    const now = new Date().toISOString();
+    const actor = getCurrentUserEmail();
+    const { error } = await supabase
+      .from('tickets')
+      .update({
+        paid: true,
+        paid_at: now,
+        paid_by: actor,
+        checked_in: true,
+        checked_in_at: now,
+        checked_in_by: actor,
+      })
+      .eq('ticket_number', pad(ticketNumber));
+
+    if (error) {
+      console.error('payAndCheckIn failed:', error);
+      throw error;
+    }
+    return true;
+  }
+}
+
+export const ticketService = new TicketService();

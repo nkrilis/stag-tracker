@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sheetsService } from '../services/googleSheetsService';
+import { ticketService } from '../services/ticketService';
 import './PaymentSearch.css';
 
 export function PaymentSearch() {
@@ -32,8 +32,8 @@ export function PaymentSearch() {
 
   const loadAllTickets = async () => {
     try {
-      const rows = await sheetsService.getRows();
-      setAllTickets(rows.slice(2)); // Skip title row and header row
+      const rows = await ticketService.getRows();
+      setAllTickets(rows);
     } catch (error) {
       console.error('Failed to load tickets:', error);
     }
@@ -76,10 +76,10 @@ export function PaymentSearch() {
     try {
       if (currentStatus) {
         // Mark as unpaid
-        await sheetsService.markAsUnpaid(ticketNumber);
+        await ticketService.markAsUnpaid(ticketNumber);
       } else {
         // Mark as paid
-        await sheetsService.markAsPaid(ticketNumber);
+        await ticketService.markAsPaid(ticketNumber);
       }
       // Refresh the tickets to update status
       await loadAllTickets();
@@ -131,6 +131,8 @@ export function PaymentSearch() {
                   const phoneNumber = String(row[2] || '');
                   const isPaid = row[3] === 'Yes';
                   const isCheckedIn = row[4] === 'Yes';
+                  const paidBy = row[7] || '';
+                  const checkedInBy = row[8] || '';
                   const isCurrentlyProcessing = isProcessing === ticketNumber;
                   
                   return (
@@ -148,6 +150,16 @@ export function PaymentSearch() {
                                 <span className="result-phone-number">{phoneNumber}</span>
                               </div>
                             )}
+                            {(isPaid && paidBy) || (isCheckedIn && checkedInBy) ? (
+                              <div className="result-audit">
+                                {isPaid && paidBy && (
+                                  <span>💵 Paid by {paidBy}</span>
+                                )}
+                                {isCheckedIn && checkedInBy && (
+                                  <span>✓ Checked in by {checkedInBy}</span>
+                                )}
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>
