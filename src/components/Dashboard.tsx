@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sheetsService } from '../services/googleSheetsService';
+import { ticketService } from '../services/ticketService';
 import './Dashboard.css';
 
 interface DashboardStats {
@@ -15,6 +15,7 @@ interface DashboardStats {
     name: string;
     phoneNumber: string;
     checkedIn: string;
+    checkedInBy: string;
   }>;
 }
 
@@ -56,10 +57,9 @@ export function Dashboard() {
 
   const loadStats = async () => {
     try {
-      const rows = await sheetsService.getRows();
-      
-      // Table starts at row 3, so skip first 2 rows (title + header)
-      const dataRows = rows.slice(2).filter(row => {
+      const rows = await ticketService.getRows();
+
+      const dataRows = rows.filter(row => {
         if (!row || row.length === 0) return false;
         
         const ticketNumber = row[0];
@@ -98,7 +98,8 @@ export function Dashboard() {
           ticketNumber: String(row[0]),
           name: `${row[1]} ${row[2]}`,
           phoneNumber: String(row[2]),
-          checkedIn: 'Just now' // Since we don't have timestamps in the sheet yet
+          checkedIn: 'Just now', // Since we don't have timestamps in the sheet yet
+          checkedInBy: String(row[8] || '')
         }))
         .slice(0, 5);
 
@@ -180,6 +181,9 @@ export function Dashboard() {
               <li key={index}>
                 <span className="ticket-number">#{checkin.ticketNumber.padStart(3, '0')}</span>
                 <span className="guest-name">{checkin.name}</span>
+                {checkin.checkedInBy && (
+                  <span className="check-in-by">by {checkin.checkedInBy}</span>
+                )}
                 <span className="check-in-time">{checkin.checkedIn}</span>
               </li>
             ))}

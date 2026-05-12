@@ -319,3 +319,12 @@
     gap: 8px;
   }
 }
+
+.result-audit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+}

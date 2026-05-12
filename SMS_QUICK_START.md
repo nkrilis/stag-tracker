@@ -41,7 +41,7 @@ Edit `src/config/eventConfig.ts`:
 
 ```typescript
 export const EVENT_CONFIG = {
-  name: "Christopher's Stag Party",
+  name: "Nick's Stag Party",
   startDate: '2026-02-14T19:00:00',
   endDate: '2026-02-15T02:00:00',
   formattedDate: 'Saturday, February 14, 2026',
@@ -118,7 +118,7 @@ To verify a number:
 ```text
 Hi John! 🎉
 
-Event: Christopher's Stag Party
+Event: Nick's Stag Party
 📅 Saturday, February 14, 2026 at 7:00 PM
 📍 The Grand Ballroom
 123 Main Street, New York, NY 10001

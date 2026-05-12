@@ -21,7 +21,7 @@ export const EVENT_CONFIG = {
   address: '1680 Creditstone Rd, Vaughan, ON L4K 5V6',
   
   // Optional: Additional description for calendar event
-  description: "Join us for Christopher's Gentleman's Dinner!",
+  description: "Join us for Nick's Gentleman's Dinner!",
   
   // Timezone (adjust based on your location)
   timezone: 'America/Toronto'

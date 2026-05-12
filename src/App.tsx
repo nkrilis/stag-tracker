@@ -1,54 +1,60 @@
 import { useState, useEffect } from 'react';
 import { Login } from './components/Login';
+import { Signup } from './components/Signup';
 import { TicketForm } from './components/TicketForm';
 import { Dashboard } from './components/Dashboard';
 import { PaymentSearch } from './components/PaymentSearch';
 import { GuestSearch } from './components/GuestSearch';
 import { BulkCheckIn } from './components/BulkCheckIn';
 import { BulkNotification } from './components/BulkNotification';
+import { TicketHolders } from './components/TicketHolders';
 import { EVENT_DAY } from './config/appMode';
+import { supabase, ADMIN_EMAIL } from './config/supabase';
 import './App.css';
 
-type View = 'dashboard' | 'add' | 'bulk' | 'search' | 'payment' | 'notifications';
+type View = 'dashboard' | 'add' | 'bulk' | 'search' | 'payment' | 'notifications' | 'holders';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const isAuthenticated = userEmail !== null;
+  const isAdmin =
+    !!userEmail && !!ADMIN_EMAIL && userEmail.toLowerCase() === ADMIN_EMAIL;
+
   useEffect(() => {
-    const auth = localStorage.getItem('stagTrackerAuth');
-    if (auth === 'admin') {
-      setIsAuthenticated(true);
-      setIsAdmin(true);
-    } else if (auth === 'regular') {
-      setIsAuthenticated(true);
-      setIsAdmin(false);
-    }
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setUserEmail(data.session?.user.email ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user.email ?? null);
+    });
 
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
     return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  const handleLogin = (adminAccess: boolean) => {
-    setIsAuthenticated(true);
-    setIsAdmin(adminAccess);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('stagTrackerAuth');
-    setIsAuthenticated(false);
-    setIsAdmin(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setCurrentView('dashboard');
   };
 
   const handleViewChange = (view: View) => {
@@ -56,8 +62,16 @@ function App() {
     setMobileMenuOpen(false);
   };
 
+  if (authLoading) {
+    return <div className="app-loading">Loading…</div>;
+  }
+
   if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
+    return authView === 'signup' ? (
+      <Signup onSwitchToLogin={() => setAuthView('login')} />
+    ) : (
+      <Login onSwitchToSignup={() => setAuthView('signup')} />
+    );
   }
 
   return (
@@ -80,7 +94,7 @@ function App() {
               <span></span>
               <span></span>
             </button>
-            <h1>🎟️ Christopher's Stag Tracker</h1>
+            <h1>🎟️ Nick's Ticket Tracker</h1>
           </div>
           <div className="header-actions">
             {!isOnline && <span className="offline-badge">🔴 Offline Mode</span>}
@@ -133,6 +147,15 @@ function App() {
               📱 Notifications
             </button>
           )}
+
+          {isAdmin && (
+            <button
+              className={currentView === 'holders' ? 'active' : ''}
+              onClick={() => handleViewChange('holders')}
+            >
+              🎫 Holders
+            </button>
+          )}
           
           <button
             className={currentView === 'add' ? 'active' : ''}
@@ -149,6 +172,7 @@ function App() {
         {currentView === 'search' && (EVENT_DAY || isAdmin) && <GuestSearch />}
         {currentView === 'payment' && (!EVENT_DAY || isAdmin) && <PaymentSearch />}
         {currentView === 'notifications' && isAdmin && <BulkNotification />}
+        {currentView === 'holders' && isAdmin && <TicketHolders />}
         {currentView === 'add' && <TicketForm />}
       </main>
     </div>

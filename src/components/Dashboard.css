@@ -247,3 +247,10 @@
     align-self: flex-end;
   }
 }
+
+.check-in-by {
+  font-size: 0.75rem;
+  color: #888;
+  margin-left: 0.5rem;
+  font-style: italic;
+}

@@ -1,11 +1,11 @@
 import { useState, FormEvent, useEffect } from 'react';
-import { sheetsService } from '../services/googleSheetsService';
-import { TicketData } from '../config/googleSheets';
+import { ticketService } from '../services/ticketService';
+import { TicketInput } from '../config/supabase';
 import { EVENT_DAY } from '../config/appMode';
 import './TicketForm.css';
 
 export function TicketForm() {
-  const [formData, setFormData] = useState<TicketData>({
+  const [formData, setFormData] = useState<TicketInput>({
     ticketNumber: '',
     name: '',
     phoneNumber: '',
@@ -87,7 +87,7 @@ export function TicketForm() {
         setTicketCount(tickets.length);
         
         // Use batch checking for better performance
-        const existingTickets = await sheetsService.checkMultipleTickets(tickets);
+        const existingTickets = await ticketService.checkMultipleTickets(tickets);
         
         setDuplicates(existingTickets);
         setTicketExists(existingTickets.length > 0);
@@ -140,7 +140,7 @@ export function TicketForm() {
       }));
 
       // Submit all tickets in one batch request
-      const result = await sheetsService.appendMultipleTickets(ticketBatch);
+      const result = await ticketService.appendMultipleTickets(ticketBatch);
 
       if (result.failed.length === 0) {
         setMessage({ 
@@ -173,7 +173,7 @@ export function TicketForm() {
     }
   };
 
-  const handleInputChange = (field: keyof TicketData, value: string | boolean) => {
+  const handleInputChange = (field: keyof TicketInput, value: string | boolean) => {
     if (field === 'phoneNumber' && typeof value === 'string') {
       const formatted = formatPhoneNumber(value);
       setFormData(prev => ({

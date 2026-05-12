@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sheetsService } from '../services/googleSheetsService';
+import { ticketService } from '../services/ticketService';
 import { smsService, SMSRecipient, EventDetails } from '../services/smsService';
 import { CalendarLinkGenerator } from '../utils/calendarLinkGenerator';
 import { EVENT_CONFIG } from '../config/eventConfig';
@@ -62,11 +62,10 @@ export function BulkNotification() {
       setLoading(true);
       setError(null);
       
-      const rows = await sheetsService.getRows();
-      
-      // Skip header row and map to recipients
-      // Only include people who are expected to attend
-      const recipientList: Recipient[] = rows.slice(1).map(row => ({
+      const rows = await ticketService.getRows();
+
+      // Map to recipients; only include people who are expected to attend.
+      const recipientList: Recipient[] = rows.map(row => ({
         ticketNumber: row[0] || '',
         name: row[1] || '',
         phoneNumber: row[2] || '',
