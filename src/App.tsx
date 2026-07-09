@@ -171,14 +171,12 @@ function App() {
             </button>
           )}
 
-          {isAdmin && (
-            <button
-              className={currentView === 'editor' ? 'active' : ''}
-              onClick={() => handleViewChange('editor')}
-            >
-              🛠️ Edit Tickets
-            </button>
-          )}
+          <button
+            className={currentView === 'editor' ? 'active' : ''}
+            onClick={() => handleViewChange('editor')}
+          >
+            🛠️ Edit Tickets
+          </button>
           
           <button
             className={currentView === 'add' ? 'active' : ''}
@@ -196,7 +194,7 @@ function App() {
         {currentView === 'payment' && (!EVENT_DAY || isAdmin) && <PaymentSearch />}
         {currentView === 'notifications' && isAdmin && <BulkNotification />}
         {currentView === 'holders' && isAdmin && <TicketHolders />}
-        {currentView === 'editor' && isAdmin && <TicketEditor />}
+        {currentView === 'editor' && <TicketEditor isAdmin={isAdmin} />}
         {currentView === 'add' && <TicketForm isAdmin={isAdmin} />}
       </main>
     </div>

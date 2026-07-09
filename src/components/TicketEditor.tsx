@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, FormEvent } from 'react';
 import { ticketService } from '../services/ticketService';
+import { ticketHolderService } from '../services/ticketHolderService';
 import { TicketRow } from '../config/supabase';
 import './TicketEditor.css';
 
@@ -11,6 +12,10 @@ interface EditForm {
   expected: boolean;
 }
 
+interface TicketEditorProps {
+  isAdmin: boolean;
+}
+
 const toForm = (t: TicketRow): EditForm => ({
   name: t.name,
   phoneNumber: t.phone_number,
@@ -19,7 +24,7 @@ const toForm = (t: TicketRow): EditForm => ({
   expected: t.expected,
 });
 
-export function TicketEditor() {
+export function TicketEditor({ isAdmin }: TicketEditorProps) {
   const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +33,20 @@ export function TicketEditor() {
   const [form, setForm] = useState<EditForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingNumber, setDeletingNumber] = useState<string | null>(null);
+  const [myRanges, setMyRanges] = useState<Array<{ start: string; end: string }>>([]);
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      setTickets(await ticketService.getAllTickets());
+      const [rows, ranges] = await Promise.all([
+        ticketService.getAllTickets(),
+        isAdmin
+          ? Promise.resolve([] as Array<{ start: string; end: string }>)
+          : ticketHolderService.getMyRanges(),
+      ]);
+      setTickets(rows);
+      setMyRanges(ranges);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -43,20 +56,35 @@ export function TicketEditor() {
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
+
+  // Lexicographic compare works because ticket_number is zero-padded to 3.
+  const isInMyRanges = (num: string): boolean => {
+    if (isAdmin) return true;
+    return myRanges.some((r) => num >= r.start && num <= r.end);
+  };
 
   const filtered = useMemo(() => {
+    const scoped = isAdmin
+      ? tickets
+      : tickets.filter((t) => isInMyRanges(t.ticket_number));
     const q = filter.trim().toLowerCase();
-    if (!q) return tickets;
-    return tickets.filter(
+    if (!q) return scoped;
+    return scoped.filter(
       (t) =>
         t.ticket_number.toLowerCase().includes(q) ||
         t.name.toLowerCase().includes(q) ||
         t.phone_number.toLowerCase().includes(q)
     );
-  }, [tickets, filter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickets, filter, myRanges, isAdmin]);
 
   const startEdit = (t: TicketRow) => {
+    if (!isInMyRanges(t.ticket_number)) {
+      setError(`Ticket #${t.ticket_number} is not in your assigned range.`);
+      return;
+    }
     setEditingNumber(t.ticket_number);
     setForm(toForm(t));
     setError(null);
@@ -90,6 +118,10 @@ export function TicketEditor() {
   };
 
   const handleDelete = async (t: TicketRow) => {
+    if (!isInMyRanges(t.ticket_number)) {
+      setError(`Ticket #${t.ticket_number} is not in your assigned range.`);
+      return;
+    }
     if (
       !confirm(
         `Delete ticket #${t.ticket_number} (${t.name})?\n\nThis cannot be undone.`
@@ -114,8 +146,28 @@ export function TicketEditor() {
     <div className="ticket-editor">
       <div className="editor-header">
         <h2>🛠️ Ticket Editor</h2>
-        <p>Admin-only view for editing and deleting assigned tickets.</p>
+        <p>
+          {isAdmin
+            ? 'Admin view — edit or delete any ticket.'
+            : 'Edit or delete tickets in your assigned ranges.'}
+        </p>
       </div>
+
+      {!isAdmin && (
+        <div className="editor-scope">
+          {myRanges.length === 0 ? (
+            <span className="scope-warning">
+              ⚠️ You have no assigned ticket ranges. Ask the admin to assign you a range
+              before editing tickets.
+            </span>
+          ) : (
+            <span className="scope-info">
+              Your ranges:{' '}
+              {myRanges.map((r) => `#${r.start}–#${r.end}`).join(', ')}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="editor-toolbar">
         <input

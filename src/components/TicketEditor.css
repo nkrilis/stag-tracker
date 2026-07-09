@@ -33,6 +33,25 @@
   align-items: stretch;
 }
 
+.editor-scope {
+  margin-bottom: 15px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.editor-scope .scope-warning {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.editor-scope .scope-info {
+  font-weight: 500;
+}
+
 .editor-filter {
   flex: 1;
   padding: 12px 14px;
