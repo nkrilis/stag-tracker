@@ -227,6 +227,98 @@ export class TicketService {
     }
     return true;
   }
+
+  /** Admin: fetch all tickets as full rows (with audit columns). */
+  async getAllTickets(): Promise<TicketRow[]> {
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .order('ticket_number', { ascending: true });
+    if (error) {
+      console.error('getAllTickets failed:', error);
+      throw error;
+    }
+    return (data ?? []) as TicketRow[];
+  }
+
+  /**
+   * Admin: update editable fields on a ticket. Audit `*_by` / `*_at` columns
+   * are refreshed to reflect the acting admin whenever paid / checked_in flip.
+   */
+  async updateTicket(
+    ticketNumber: string,
+    updates: {
+      name?: string;
+      phoneNumber?: string;
+      paid?: boolean;
+      checkedIn?: boolean;
+      expected?: boolean;
+    }
+  ): Promise<TicketRow> {
+    const normalized = pad(ticketNumber);
+    const actor = getCurrentUserEmail();
+    const now = new Date().toISOString();
+
+    // Fetch current row so we only touch audit columns on state changes.
+    const { data: existing, error: fetchErr } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('ticket_number', normalized)
+      .maybeSingle();
+    if (fetchErr) {
+      console.error('updateTicket fetch failed:', fetchErr);
+      throw fetchErr;
+    }
+    if (!existing) {
+      throw new Error(`Ticket #${normalized} not found`);
+    }
+    const current = existing as TicketRow;
+
+    const patch: Record<string, unknown> = {};
+    if (updates.name !== undefined) patch.name = updates.name.trim();
+    if (updates.phoneNumber !== undefined) patch.phone_number = updates.phoneNumber.trim();
+    if (updates.expected !== undefined) patch.expected = updates.expected;
+
+    if (updates.paid !== undefined && updates.paid !== current.paid) {
+      patch.paid = updates.paid;
+      patch.paid_at = updates.paid ? now : null;
+      patch.paid_by = updates.paid ? actor : null;
+    }
+    if (updates.checkedIn !== undefined && updates.checkedIn !== current.checked_in) {
+      patch.checked_in = updates.checkedIn;
+      patch.checked_in_at = updates.checkedIn ? now : null;
+      patch.checked_in_by = updates.checkedIn ? actor : null;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return current;
+    }
+
+    const { data, error } = await supabase
+      .from('tickets')
+      .update(patch)
+      .eq('ticket_number', normalized)
+      .select()
+      .single();
+    if (error) {
+      console.error('updateTicket failed:', error);
+      throw error;
+    }
+    return data as TicketRow;
+  }
+
+  /** Admin: permanently delete a ticket. */
+  async deleteTicket(ticketNumber: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('tickets')
+      .delete()
+      .eq('ticket_number', pad(ticketNumber));
+    if (error) {
+      console.error('deleteTicket failed:', error);
+      throw error;
+    }
+    return true;
+  }
 }
 
 export const ticketService = new TicketService();

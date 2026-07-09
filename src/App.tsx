@@ -8,11 +8,12 @@ import { GuestSearch } from './components/GuestSearch';
 import { BulkCheckIn } from './components/BulkCheckIn';
 import { BulkNotification } from './components/BulkNotification';
 import { TicketHolders } from './components/TicketHolders';
+import { TicketEditor } from './components/TicketEditor';
 import { EVENT_DAY } from './config/appMode';
 import { supabase, ADMIN_EMAIL, SUPABASE_CONFIGURED } from './config/supabase';
 import './App.css';
 
-type View = 'dashboard' | 'add' | 'bulk' | 'search' | 'payment' | 'notifications' | 'holders';
+type View = 'dashboard' | 'add' | 'bulk' | 'search' | 'payment' | 'notifications' | 'holders' | 'editor';
 
 function App() {
   const [authLoading, setAuthLoading] = useState(true);
@@ -169,6 +170,15 @@ function App() {
               🎫 Holders
             </button>
           )}
+
+          {isAdmin && (
+            <button
+              className={currentView === 'editor' ? 'active' : ''}
+              onClick={() => handleViewChange('editor')}
+            >
+              🛠️ Edit Tickets
+            </button>
+          )}
           
           <button
             className={currentView === 'add' ? 'active' : ''}
@@ -186,6 +196,7 @@ function App() {
         {currentView === 'payment' && (!EVENT_DAY || isAdmin) && <PaymentSearch />}
         {currentView === 'notifications' && isAdmin && <BulkNotification />}
         {currentView === 'holders' && isAdmin && <TicketHolders />}
+        {currentView === 'editor' && isAdmin && <TicketEditor />}
         {currentView === 'add' && <TicketForm isAdmin={isAdmin} />}
       </main>
     </div>
