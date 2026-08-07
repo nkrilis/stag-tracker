@@ -154,6 +154,42 @@ $$;
 revoke all on function public.list_app_users() from public;
 grant execute on function public.list_app_users() to authenticated;
 
+-- ---------- seller_collections (admin-only) ----------
+-- Records cash the admin has physically collected from each seller so the
+-- Sales page can show a running balance (owed vs collected vs remaining).
+create table if not exists public.seller_collections (
+  id            uuid        primary key default gen_random_uuid(),
+  seller        text        not null,           -- created_by email the ticket was entered under
+  amount        numeric(10,2) not null check (amount > 0),
+  notes         text,
+  collected_by  text,                            -- admin email that recorded the collection
+  created_at    timestamptz not null default now()
+);
+
+create index if not exists seller_collections_seller_idx
+  on public.seller_collections (lower(seller));
+
+alter table public.seller_collections enable row level security;
+
+drop policy if exists "seller_collections admin select" on public.seller_collections;
+drop policy if exists "seller_collections admin insert" on public.seller_collections;
+drop policy if exists "seller_collections admin delete" on public.seller_collections;
+
+create policy "seller_collections admin select"
+  on public.seller_collections for select
+  to authenticated
+  using (lower(coalesce(auth.jwt() ->> 'email', '')) = 'n.krilis@icloud.com');
+
+create policy "seller_collections admin insert"
+  on public.seller_collections for insert
+  to authenticated
+  with check (lower(coalesce(auth.jwt() ->> 'email', '')) = 'n.krilis@icloud.com');
+
+create policy "seller_collections admin delete"
+  on public.seller_collections for delete
+  to authenticated
+  using (lower(coalesce(auth.jwt() ->> 'email', '')) = 'n.krilis@icloud.com');
+
 -- ---------- Auth notes ----------
 -- 1. In Supabase Dashboard -> Authentication -> Providers, ensure "Email" is
 --    enabled and "Confirm email" is set to your preference.

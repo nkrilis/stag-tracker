@@ -26,3 +26,6 @@ export const EVENT_CONFIG = {
   // Timezone (adjust based on your location)
   timezone: 'America/Toronto'
 };
+
+// Price per ticket in dollars — used for seller balance calculations.
+export const TICKET_PRICE = 120;

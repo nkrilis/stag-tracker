@@ -1,0 +1,503 @@
+.sales-summary {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.sales-header {
+  text-align: center;
+  margin-bottom: 25px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 30px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sales-header h2 {
+  margin: 0 0 10px 0;
+  font-size: 2.2rem;
+  color: white;
+  font-weight: 700;
+}
+
+.sales-header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+}
+
+.sales-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+}
+
+.sales-toolbar button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: #e9ecef;
+  color: #333;
+  transition: background-color 0.2s;
+}
+
+.sales-toolbar button:hover:not(:disabled) {
+  background: #dee2e6;
+}
+
+.sales-toolbar button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.sales-error {
+  margin-bottom: 15px;
+  padding: 12px 14px;
+  background: #f8d7da;
+  color: #721c24;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.sales-loading,
+.empty {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
+
+/* ---------- Cards (mobile-first) ---------- */
+.sales-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.seller-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 18px;
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.seller-card:hover {
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25);
+  transform: translateY(-2px);
+}
+
+.seller-name {
+  font-weight: 700;
+  color: #333;
+  font-size: 1.05rem;
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+
+.seller-stats {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.seller-stats .stat {
+  flex: 1;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 8px 4px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #888;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.seller-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.balance-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.balance-row span {
+  color: #555;
+}
+
+.balance-row.collect {
+  background: #d4edda;
+}
+
+.balance-row.collect strong {
+  color: #155724;
+}
+
+.balance-row.received {
+  background: #e7f1ff;
+}
+
+.balance-row.received strong {
+  color: #0b5ed7;
+}
+
+.balance-row.remaining {
+  background: #fff3cd;
+}
+
+.balance-row.remaining strong {
+  color: #856404;
+}
+
+.balance-row.remaining.settled {
+  background: #d4edda;
+}
+
+.balance-row.remaining.settled strong {
+  color: #155724;
+}
+
+.balance-row.total strong {
+  color: #333;
+}
+
+/* ---------- Table (desktop) ---------- */
+.sales-table-wrap {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.sales-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.sales-table th,
+.sales-table td {
+  padding: 10px 12px;
+  text-align: right;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+.sales-table th:first-child,
+.sales-table td.seller {
+  text-align: left;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.sales-table thead th {
+  color: #666;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sales-table td.collect {
+  color: #155724;
+  font-weight: 600;
+}
+
+.sales-table td.received {
+  color: #0b5ed7;
+  font-weight: 600;
+}
+
+.sales-table td.outstanding {
+  color: #856404;
+  font-weight: 600;
+}
+
+.sales-table td.settled {
+  color: #155724;
+  font-weight: 600;
+}
+
+.sales-table tr.clickable {
+  cursor: pointer;
+}
+
+.sales-table tr.clickable:hover td {
+  background: #f2f4ff;
+}
+
+.sales-table tfoot td {
+  border-top: 2px solid #ddd;
+  border-bottom: none;
+  font-weight: 700;
+  background: #f8f9fa;
+}
+
+/* ---------- Collection modal ---------- */
+.collection-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.collection-modal {
+  background: white;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.collection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 22px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 14px 14px 0 0;
+}
+
+.collection-head h3 {
+  margin: 0;
+  color: white;
+  font-size: 1.2rem;
+  word-break: break-all;
+}
+
+.collection-head .close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.collection-head .close:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.collection-summary {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.cs-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.cs-row strong {
+  color: #333;
+}
+
+.cs-row.remaining {
+  font-size: 1.1rem;
+  padding-top: 8px;
+  border-top: 1px dashed #ddd;
+}
+
+.cs-row.remaining strong {
+  color: #856404;
+}
+
+.cs-row.remaining.settled strong {
+  color: #155724;
+}
+
+.collection-form {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.collection-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+  gap: 5px;
+}
+
+.collection-form input {
+  padding: 11px 13px;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  color: #222;
+  background: white;
+}
+
+.collection-form input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.collection-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.collection-actions button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.collection-actions button[type='submit'] {
+  flex: 1;
+  background: #3498db;
+  color: white;
+}
+
+.collection-actions button[type='submit']:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.collection-actions button[type='submit']:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.collection-actions button.quick {
+  background: #e9ecef;
+  color: #333;
+}
+
+.collection-actions button.quick:hover {
+  background: #dee2e6;
+}
+
+.collection-error {
+  padding: 8px 12px;
+  background: #f8d7da;
+  color: #721c24;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.collection-history {
+  padding: 18px 22px;
+}
+
+.collection-history h4 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.collection-history ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.collection-history li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.ch-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+
+.ch-amount {
+  font-weight: 700;
+  color: #155724;
+}
+
+.ch-date {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.ch-notes {
+  font-size: 0.85rem;
+  color: #555;
+  flex-basis: 100%;
+}
+
+.ch-delete {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ch-delete:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 700px) {
+  .sales-header h2 {
+    font-size: 1.7rem;
+  }
+  .sales-table-wrap {
+    display: none;
+  }
+}
