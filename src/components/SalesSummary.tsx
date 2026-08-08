@@ -4,6 +4,7 @@ import {
   sellerCollectionService,
   SellerCollection,
 } from '../services/sellerCollectionService';
+import { TicketRow } from '../config/supabase';
 import { TICKET_PRICE } from '../config/eventConfig';
 import './SalesSummary.css';
 
@@ -12,6 +13,7 @@ const money = (n: number) =>
 
 export function SalesSummary() {
   const [summaries, setSummaries] = useState<SellerSummary[]>([]);
+  const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [collections, setCollections] = useState<SellerCollection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,11 +23,13 @@ export function SalesSummary() {
     setLoading(true);
     setError(null);
     try {
-      const [rows, cols] = await Promise.all([
+      const [rows, allTickets, cols] = await Promise.all([
         ticketService.getSellerSummaries(TICKET_PRICE),
+        ticketService.getAllTickets(),
         sellerCollectionService.list(),
       ]);
       setSummaries(rows);
+      setTickets(allTickets);
       setCollections(cols);
     } catch (e) {
       setError((e as Error).message);
@@ -60,16 +64,16 @@ export function SalesSummary() {
             totalSold: acc.totalSold + s.totalSold,
             paidCount: acc.paidCount + s.paidCount,
             unpaidCount: acc.unpaidCount + s.unpaidCount,
-            collected: acc.collected + s.collected,
+            owed: acc.owed + s.totalValue,
             received: acc.received + received,
-            remaining: acc.remaining + (s.collected - received),
+            remaining: acc.remaining + (s.totalValue - received),
           };
         },
         {
           totalSold: 0,
           paidCount: 0,
           unpaidCount: 0,
-          collected: 0,
+          owed: 0,
           received: 0,
           remaining: 0,
         }
@@ -106,7 +110,7 @@ export function SalesSummary() {
           <div className="sales-cards">
             {summaries.map((s) => {
               const received = collectedFor(s.seller);
-              const remaining = s.collected - received;
+              const remaining = s.totalValue - received;
               return (
                 <button
                   key={s.seller}
@@ -130,8 +134,8 @@ export function SalesSummary() {
                   </div>
                   <div className="seller-balance">
                     <div className="balance-row collect">
-                      <span>Owed (paid tickets)</span>
-                      <strong>{money(s.collected)}</strong>
+                      <span>Owed (all tickets)</span>
+                      <strong>{money(s.totalValue)}</strong>
                     </div>
                     <div className="balance-row received">
                       <span>Collected</span>
@@ -144,6 +148,10 @@ export function SalesSummary() {
                     >
                       <span>Remaining</span>
                       <strong>{money(remaining)}</strong>
+                    </div>
+                    <div className="balance-row unpaid">
+                      <span>Of which unpaid</span>
+                      <strong>{money(s.outstanding)}</strong>
                     </div>
                   </div>
                 </button>
@@ -167,7 +175,7 @@ export function SalesSummary() {
               <tbody>
                 {summaries.map((s) => {
                   const received = collectedFor(s.seller);
-                  const remaining = s.collected - received;
+                  const remaining = s.totalValue - received;
                   return (
                     <tr
                       key={s.seller}
@@ -178,7 +186,7 @@ export function SalesSummary() {
                       <td>{s.totalSold}</td>
                       <td>{s.paidCount}</td>
                       <td>{s.unpaidCount}</td>
-                      <td className="collect">{money(s.collected)}</td>
+                      <td className="collect">{money(s.totalValue)}</td>
                       <td className="received">{money(received)}</td>
                       <td className={remaining <= 0 ? 'settled' : 'outstanding'}>
                         {money(remaining)}
@@ -193,7 +201,7 @@ export function SalesSummary() {
                   <td>{totals.totalSold}</td>
                   <td>{totals.paidCount}</td>
                   <td>{totals.unpaidCount}</td>
-                  <td className="collect">{money(totals.collected)}</td>
+                  <td className="collect">{money(totals.owed)}</td>
                   <td className="received">{money(totals.received)}</td>
                   <td className={totals.remaining <= 0 ? 'settled' : 'outstanding'}>
                     {money(totals.remaining)}
@@ -208,6 +216,11 @@ export function SalesSummary() {
       {activeSummary && (
         <CollectionModal
           summary={activeSummary}
+          tickets={tickets.filter(
+            (t) =>
+              (t.created_by?.trim().toLowerCase() || 'unknown') ===
+              activeSummary.seller.toLowerCase()
+          )}
           collections={collections.filter(
             (c) => c.seller.toLowerCase() === activeSummary.seller.toLowerCase()
           )}
@@ -221,6 +234,7 @@ export function SalesSummary() {
 
 interface CollectionModalProps {
   summary: SellerSummary;
+  tickets: TicketRow[];
   collections: SellerCollection[];
   onClose: () => void;
   onChanged: () => Promise<void>;
@@ -228,6 +242,7 @@ interface CollectionModalProps {
 
 function CollectionModal({
   summary,
+  tickets,
   collections,
   onClose,
   onChanged,
@@ -236,9 +251,13 @@ function CollectionModal({
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTickets, setShowTickets] = useState<'paid' | 'unpaid' | null>(null);
+
+  const paidTickets = tickets.filter((t) => t.paid);
+  const unpaidTickets = tickets.filter((t) => !t.paid);
 
   const received = collections.reduce((sum, c) => sum + Number(c.amount), 0);
-  const remaining = summary.collected - received;
+  const remaining = summary.totalValue - received;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -284,8 +303,8 @@ function CollectionModal({
 
         <div className="collection-summary">
           <div className="cs-row">
-            <span>Owed (paid tickets)</span>
-            <strong>{money(summary.collected)}</strong>
+            <span>Owed (all tickets)</span>
+            <strong>{money(summary.totalValue)}</strong>
           </div>
           <div className="cs-row">
             <span>Collected so far</span>
@@ -295,6 +314,32 @@ function CollectionModal({
             <span>Remaining to collect</span>
             <strong>{money(remaining)}</strong>
           </div>
+          <button
+            type="button"
+            className={`cs-row toggle ${showTickets === 'paid' ? 'open' : ''}`}
+            onClick={() => setShowTickets(showTickets === 'paid' ? null : 'paid')}
+          >
+            <span>Paid tickets ({summary.paidCount}) ▾</span>
+            <strong>{money(summary.collected)}</strong>
+          </button>
+          {showTickets === 'paid' && (
+            <TicketList tickets={paidTickets} emptyLabel="No paid tickets." />
+          )}
+          <button
+            type="button"
+            className={`cs-row toggle unpaid ${
+              showTickets === 'unpaid' ? 'open' : ''
+            }`}
+            onClick={() =>
+              setShowTickets(showTickets === 'unpaid' ? null : 'unpaid')
+            }
+          >
+            <span>Unpaid tickets ({summary.unpaidCount}) ▾</span>
+            <strong>{money(summary.outstanding)}</strong>
+          </button>
+          {showTickets === 'unpaid' && (
+            <TicketList tickets={unpaidTickets} emptyLabel="No unpaid tickets." />
+          )}
         </div>
 
         <form className="collection-form" onSubmit={handleSubmit}>
@@ -360,5 +405,28 @@ function CollectionModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function TicketList({
+  tickets,
+  emptyLabel,
+}: {
+  tickets: TicketRow[];
+  emptyLabel: string;
+}) {
+  if (tickets.length === 0) {
+    return <p className="ticket-list-empty">{emptyLabel}</p>;
+  }
+  return (
+    <ul className="ticket-list">
+      {tickets.map((t) => (
+        <li key={t.ticket_number}>
+          <span className="tl-num">#{t.ticket_number}</span>
+          <span className="tl-name">{t.name}</span>
+          <span className="tl-phone">{t.phone_number}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
