@@ -319,6 +319,57 @@ export class TicketService {
     }
     return true;
   }
+
+  /**
+   * Admin: aggregate tickets by the staff member who entered them (created_by)
+   * to work out how many each seller has sold and what balance to collect.
+   */
+  async getSellerSummaries(ticketPrice: number): Promise<SellerSummary[]> {
+    const rows = await this.getAllTickets();
+
+    const bySeller = new Map<string, SellerSummary>();
+    for (const r of rows) {
+      const seller = r.created_by?.trim() || 'Unknown';
+      let s = bySeller.get(seller);
+      if (!s) {
+        s = {
+          seller,
+          totalSold: 0,
+          paidCount: 0,
+          unpaidCount: 0,
+          collected: 0,
+          outstanding: 0,
+          totalValue: 0,
+        };
+        bySeller.set(seller, s);
+      }
+      s.totalSold += 1;
+      if (r.paid) {
+        s.paidCount += 1;
+        s.collected += ticketPrice;
+      } else {
+        s.unpaidCount += 1;
+        s.outstanding += ticketPrice;
+      }
+      s.totalValue += ticketPrice;
+    }
+
+    return Array.from(bySeller.values()).sort((a, b) =>
+      a.seller.localeCompare(b.seller)
+    );
+  }
+}
+
+export interface SellerSummary {
+  seller: string;
+  totalSold: number;
+  paidCount: number;
+  unpaidCount: number;
+  /** Cash the seller has collected from buyers (paid tickets × price). */
+  collected: number;
+  /** Value of tickets sold but not yet paid (unpaid × price). */
+  outstanding: number;
+  totalValue: number;
 }
 
 export const ticketService = new TicketService();

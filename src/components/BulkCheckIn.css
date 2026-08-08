@@ -4,6 +4,120 @@
   margin: 0 auto;
 }
 
+/* ---------- Door ticket prompt ---------- */
+.door-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.door-prompt {
+  background: white;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.door-prompt h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.door-prompt p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.door-amount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: #fff3cd;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #856404;
+}
+
+.door-amount strong {
+  font-size: 1.4rem;
+  color: #856404;
+}
+
+.door-prompt label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.door-prompt input {
+  padding: 12px 14px;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  color: #222;
+  background: white;
+}
+
+.door-prompt input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.door-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.door-actions button {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.door-actions .door-cancel {
+  background: #e9ecef;
+  color: #333;
+}
+
+.door-actions .door-cancel:hover:not(:disabled) {
+  background: #dee2e6;
+}
+
+.door-actions .door-confirm {
+  background: #27ae60;
+  color: white;
+}
+
+.door-actions .door-confirm:hover:not(:disabled) {
+  background: #219150;
+}
+
+.door-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .bulk-header {
   display: flex;
   justify-content: space-between;

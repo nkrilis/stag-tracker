@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ticketService } from '../services/ticketService';
+import { EVENT_DAY } from '../config/appMode';
+import { TICKET_PRICE } from '../config/eventConfig';
 import './BulkCheckIn.css';
 
 interface CheckInResult {
@@ -23,7 +25,10 @@ export function BulkCheckIn() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedGuests, setSelectedGuests] = useState<SelectedGuest[]>([]);
   const [amountReceived, setAmountReceived] = useState('');
+  const [doorPrompt, setDoorPrompt] = useState<string | null>(null);
+  const [doorSaving, setDoorSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const doorConfirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     // Keep focus on input
@@ -90,6 +95,16 @@ export function BulkCheckIn() {
       const searchResult = await ticketService.searchTicket(ticket);
       
       if (!searchResult.found || !searchResult.data) {
+        // On event day, offer to add a walk-in door ticket instead of failing.
+        if (EVENT_DAY) {
+          setDoorPrompt(normalizedTicket);
+          setTicketNumber('');
+          setIsProcessing(false);
+          playSound(false);
+          vibrate(80);
+          setTimeout(() => doorConfirmRef.current?.focus(), 0);
+          return;
+        }
         const result: CheckInResult = {
           ticketNumber: ticket,
           success: false,
@@ -224,6 +239,52 @@ export function BulkCheckIn() {
     setSelectedGuests(prev => prev.filter(g => g.ticketNumber !== ticketNumber));
   };
 
+  const cancelDoorPrompt = () => {
+    setDoorPrompt(null);
+    setDoorSaving(false);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const handleAddDoorTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!doorPrompt || doorSaving) return;
+
+    setDoorSaving(true);
+    try {
+      // Walk-ins pay at the door, so mark paid + checked in immediately.
+      // Name/phone are placeholders since they don't matter for door sales.
+      await ticketService.appendTicket({
+        ticketNumber: doorPrompt,
+        name: 'Door Ticket',
+        phoneNumber: '000-000-0000',
+        paid: true,
+        checkedIn: true,
+        expected: false,
+      });
+      const result: CheckInResult = {
+        ticketNumber: doorPrompt,
+        success: true,
+        message: `🚪 Door ticket added (Paid & Checked In)`,
+        timestamp: new Date(),
+      };
+      setResults(prev => [result, ...prev]);
+      playSound(true);
+      vibrate(50);
+      cancelDoorPrompt();
+    } catch (error) {
+      const result: CheckInResult = {
+        ticketNumber: doorPrompt,
+        success: false,
+        message: 'Failed to add door ticket - try again',
+        timestamp: new Date(),
+      };
+      setResults(prev => [result, ...prev]);
+      playSound(false);
+      vibrate(200);
+      setDoorSaving(false);
+    }
+  };
+
   const clearSelection = () => {
     setSelectedGuests([]);
     setAmountReceived('');
@@ -336,6 +397,41 @@ export function BulkCheckIn() {
           {isProcessing ? '⏳' : '+'}
         </button>
       </form>
+
+      {doorPrompt && (
+        <div className="door-prompt-backdrop" onClick={cancelDoorPrompt}>
+          <form
+            className="door-prompt"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleAddDoorTicket}
+          >
+            <h3>Add Door Ticket #{doorPrompt}?</h3>
+            <p>Ticket not found — add this walk-in as paid &amp; checked in.</p>
+            <div className="door-amount">
+              <span>Amount owed</span>
+              <strong>${TICKET_PRICE.toFixed(2)}</strong>
+            </div>
+            <div className="door-actions">
+              <button
+                type="button"
+                className="door-cancel"
+                onClick={cancelDoorPrompt}
+                disabled={doorSaving}
+              >
+                Cancel
+              </button>
+              <button
+                ref={doorConfirmRef}
+                type="submit"
+                className="door-confirm"
+                disabled={doorSaving}
+              >
+                {doorSaving ? 'Adding…' : 'Add & Check In'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {selectedGuests.length > 0 && (
         <div className="selected-guests">
