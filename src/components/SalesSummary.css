@@ -205,6 +205,7 @@
 
 .sales-table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
@@ -215,13 +216,15 @@
   text-align: right;
   border-bottom: 1px solid #eee;
   color: #333;
+  white-space: nowrap;
 }
 
 .sales-table th:first-child,
 .sales-table td.seller {
   text-align: left;
   font-weight: 600;
-  word-break: break-all;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .sales-table thead th {
@@ -275,7 +278,8 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
-  z-index: 1000;
+  overflow-y: auto;
+  z-index: 2000;
 }
 
 .collection-modal {
@@ -284,6 +288,8 @@
   width: 100%;
   max-width: 460px;
   max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
 }
@@ -296,6 +302,10 @@
   padding: 20px 22px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 14px 14px 0 0;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .collection-head h3 {
@@ -328,6 +338,7 @@
   flex-direction: column;
   gap: 8px;
   border-bottom: 1px solid #eee;
+  flex-shrink: 0;
 }
 
 .cs-row {
@@ -440,6 +451,7 @@
   flex-direction: column;
   gap: 12px;
   border-bottom: 1px solid #eee;
+  flex-shrink: 0;
 }
 
 .collection-form label {
@@ -585,6 +597,19 @@
     font-size: 1.7rem;
   }
   .sales-table-wrap {
-    display: none;
+    /* Hint that the table scrolls sideways on narrow screens. */
+    -webkit-overflow-scrolling: touch;
+  }
+  .sales-table {
+    font-size: 0.82rem;
+  }
+  .collection-backdrop {
+    align-items: flex-start;
+    padding: 12px;
+    /* Clear the sticky app header/nav so the close button is reachable. */
+    padding-top: calc(72px + env(safe-area-inset-top, 0px));
+  }
+  .collection-modal {
+    max-height: calc(100dvh - 72px - env(safe-area-inset-top, 0px) - 24px);
   }
 }
