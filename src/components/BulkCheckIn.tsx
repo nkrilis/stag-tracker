@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, type ComponentType } from 'react';
 import { ticketService } from '../services/ticketService';
 import { EVENT_DAY } from '../config/appMode';
 import { TICKET_PRICE } from '../config/eventConfig';
+import type { TicketScanner as TicketScannerType } from './TicketScanner';
 import './BulkCheckIn.css';
 
-const TicketScanner = lazy(() =>
+const TicketScanner = lazy<ComponentType<Parameters<typeof TicketScannerType>[0]>>(() =>
   import('./TicketScanner').then((m) => ({ default: m.TicketScanner })),
 );
 
@@ -434,6 +435,7 @@ export function BulkCheckIn() {
             onDetected={handleScannerDetected}
             onClose={() => setScannerOpen(false)}
             autoAccept
+            debug={typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('scan') === 'debug'}
           />
         </Suspense>
       )}
