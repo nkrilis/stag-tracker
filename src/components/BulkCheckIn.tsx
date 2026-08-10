@@ -1,8 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { ticketService } from '../services/ticketService';
 import { EVENT_DAY } from '../config/appMode';
 import { TICKET_PRICE } from '../config/eventConfig';
 import './BulkCheckIn.css';
+
+const TicketScanner = lazy(() =>
+  import('./TicketScanner').then((m) => ({ default: m.TicketScanner })),
+);
 
 interface CheckInResult {
   ticketNumber: string;
@@ -27,8 +31,11 @@ export function BulkCheckIn() {
   const [amountReceived, setAmountReceived] = useState('');
   const [doorPrompt, setDoorPrompt] = useState<string | null>(null);
   const [doorSaving, setDoorSaving] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const doorConfirmRef = useRef<HTMLButtonElement>(null);
+  // Prevents re-processing the same scan while camera keeps seeing it.
+  const lastScanRef = useRef<{ value: string; at: number }>({ value: '', at: 0 });
 
   useEffect(() => {
     // Keep focus on input
@@ -65,12 +72,9 @@ export function BulkCheckIn() {
     }
   };
 
-  const handleAddGuest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!ticketNumber.trim() || isProcessing) return;
-
-    const ticket = ticketNumber.trim();
+  const processTicket = async (raw: string) => {
+    const ticket = raw.trim();
+    if (!ticket) return;
     const normalizedTicket = ticket.padStart(3, '0');
 
     // Check if already in selected list (normalized comparison)
@@ -235,6 +239,22 @@ export function BulkCheckIn() {
     setTicketNumber('');
   };
 
+  const handleAddGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticketNumber.trim() || isProcessing) return;
+    await processTicket(ticketNumber);
+  };
+
+  const handleScannerDetected = async (scanned: string) => {
+    // Debounce identical repeat reads coming from the camera loop.
+    const now = Date.now();
+    const last = lastScanRef.current;
+    if (last.value === scanned && now - last.at < 2500) return;
+    lastScanRef.current = { value: scanned, at: now };
+    if (isProcessing) return;
+    await processTicket(scanned);
+  };
+
   const removeGuest = (ticketNumber: string) => {
     setSelectedGuests(prev => prev.filter(g => g.ticketNumber !== ticketNumber));
   };
@@ -393,10 +413,30 @@ export function BulkCheckIn() {
           autoFocus
           className="bulk-input"
         />
+        <button
+          type="button"
+          onClick={() => setScannerOpen((v) => !v)}
+          className={`scanner-toggle ${scannerOpen ? 'active' : ''}`}
+          aria-pressed={scannerOpen}
+          aria-label={scannerOpen ? 'Close camera scanner' : 'Open camera scanner'}
+          title={scannerOpen ? 'Close camera' : 'Scan with camera'}
+        >
+          📷
+        </button>
         <button type="submit" disabled={isProcessing || !ticketNumber.trim()} className="bulk-submit">
           {isProcessing ? '⏳' : '+'}
         </button>
       </form>
+
+      {scannerOpen && (
+        <Suspense fallback={<div className="scanner-panel"><div className="scanner-header"><span className="scanner-title">Loading camera…</span></div></div>}>
+          <TicketScanner
+            onDetected={handleScannerDetected}
+            onClose={() => setScannerOpen(false)}
+            autoAccept
+          />
+        </Suspense>
+      )}
 
       {doorPrompt && (
         <div className="door-prompt-backdrop" onClick={cancelDoorPrompt}>
